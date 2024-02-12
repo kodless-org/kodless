@@ -21,7 +21,12 @@ const concepts = computed(() => {
 
   <DependencyManager :dependenciesExist="dependenciesExist" :projectName="projectName" @installed="refreshProject"/>
 
+  <ProjectStatus :project="projectName" />
+
   <n-collapse>
+    <n-collapse-item title="Environment">
+      <EnvironmentManager :project="projectName" />
+    </n-collapse-item>
     <n-collapse-item title="File Directory">
       <FileTree v-if="files" :files="files" />
       <p v-else>Loading...</p>

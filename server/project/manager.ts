@@ -1,12 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
+import { execSync, spawn, ChildProcess } from "child_process";
 import { readdir } from "~/server/fsutil";
 import { fileURLToPath } from 'url';
 
 const projectsDir = process.env.PROJECTS_DIRECTORY as string;
 
-const PROJECT_RUNNERS: Record<string, ChildProcessWithoutNullStreams> = {};
+const PROJECT_RUNNERS: Record<string, ChildProcess> = {};
 
 export const getProjects = async () => {
   const projects = await fs.promises.readdir(projectsDir);
@@ -141,7 +141,7 @@ export const getConcept = async (project: string, concept: string) => {
   return content;
 };
 
-export const getProjectEnv = async (project: string) => {
+export const getProjectEnvironment = async (project: string) => {
   await validateProjectName(project);
 
   const envFile = `${projectsDir}/${project}/.env`;
@@ -152,8 +152,30 @@ export const getProjectEnv = async (project: string) => {
     });
   }
 
-  const env = await fs.promises.readFile(envFile, "utf8");
+  const envText = await fs.promises.readFile(envFile, "utf8");
+
+  const lines = envText.split("\n");
+  const env: Record<string, string> = {};
+
+  for (const line of lines) {
+    if (!line) continue;
+    const [key, ...value] = line.split("=");
+    env[key.trim()] = value.join("=").trim();
+  }
+
   return env;
+};
+
+export const updateProjectEnvironment = async (project: string, env: Record<string, string>) => {
+  await validateProjectName(project);
+
+  const envFile = `${projectsDir}/${project}/.env`;
+  const lines = Object.entries(env).map(([key, value]) => `${key}=${value}`);
+  const content = lines.join("\n");
+
+  await fs.promises.writeFile(envFile, content);
+
+  return { message: `Environment updated for project ${project}` };
 };
 
 export const runProject = async (project: string) => {
@@ -168,6 +190,7 @@ export const runProject = async (project: string) => {
 
   const runner = spawn("npm", ["run", "start"], {
     cwd: `${projectsDir}/${project}`,
+    stdio: "inherit",
   });
 
   PROJECT_RUNNERS[project] = runner;
