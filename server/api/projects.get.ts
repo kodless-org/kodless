@@ -1,6 +1,5 @@
-import { getProjects } from "./utils";
+import { getProjects } from "../manager";
 
 export default defineEventHandler(async (event) => {
-  const projects = await getProjects();
-  return projects;
+  return await getProjects();
 });

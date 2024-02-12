@@ -1,0 +1,73 @@
+<script setup lang="ts">
+const { files } = defineProps<{
+  files: string[];
+}>();
+
+const isDirectory = (file: string) => {
+  return (files ?? []).some((f: string) => f.startsWith(file + "/"));
+};
+
+const getClass = (file: string) => {
+  if (file === "node_modules") {
+    return "node_modules";
+  }
+  if (isDirectory(file)) {
+    return "directory";
+  }
+  if (file.endsWith(".json") || file === ".gitignore") {
+    return "config";
+  }
+  if (file.endsWith(".ts") || file.endsWith(".js")) {
+    return "code";
+  }
+  return "";
+}
+
+</script>
+
+<template>
+  <ul>
+    <li
+      v-for="file in files"
+      :key="file"
+      :style="{ marginLeft: (file.split('/').length - 1) * 2 + 'em' }"
+      :class="getClass(file)"
+    >
+      {{ file.split("/").pop() }}
+    </li>
+  </ul>
+</template>
+
+<style scoped>
+ul {
+  font-family: monospace;
+  list-style: none;
+  padding: 0;
+  border: 2px solid #3b5bdb;
+  border-radius: 0.5em;
+  padding: 1em;
+}
+ul li {
+  margin-top: 0.5em;
+}
+ul li::before {
+  content: "📄";
+  margin-right: 0.5em;
+}
+ul li.directory::before {
+  content: "📁";
+  margin-right: 0.5em;
+}
+ul li.node_modules::before {
+  content: "📦";
+  margin-right: 0.5em;
+}
+ul li.config::before {
+  content: "⚙️";
+  margin-right: 0.5em;
+}
+ul li.code::before {
+  content: "📝";
+  margin-right: 0.5em;
+}
+</style>

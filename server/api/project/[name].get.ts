@@ -1,10 +1,5 @@
-import { getProject } from "../utils";
+import { getProject } from "../../manager";
 
 export default defineEventHandler(async (event) => {
-  const name = event.context.params?.name;
-  if (!name) {
-    throw new Error("Missing project name");
-  }
-  const project = await getProject(name);
-  return project;
+  return await getProject(event.context.params?.name!);
 });
