@@ -1,6 +1,8 @@
 import fs from "fs";
+import path from "path";
 import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { readdir } from "~/server/fsutil";
+import { fileURLToPath } from 'url';
 
 const projectsDir = process.env.PROJECTS_DIRECTORY as string;
 
@@ -48,7 +50,9 @@ export const createProject = async (project: string) => {
   await fs.promises.mkdir(`${projectsDir}/${project}`);
 
   // Copy the template files to the new project
-  const templateDir = `${projectsDir}/template`;
+  // The template directory is under ./server/project/template
+  const templateDir = path.join(fileURLToPath(import.meta.url), "../../../template");
+
   await fs.promises.cp(templateDir, `${projectsDir}/${project}`, {
     recursive: true,
   });
