@@ -84,7 +84,9 @@ export const getProjectFiles = async (project: string) => {
   return files;
 };
 
-export const getProjectStatus = async (project: string) => {
+export const getProjectStatus = async (
+  project: string
+): Promise<{ status: "running" | "stopped" }> => {
   await validateProjectName(project);
   return { status: PROJECT_RUNNERS[project] ? "running" : "stopped" };
 };
