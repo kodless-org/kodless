@@ -9,61 +9,55 @@ export const getProjects = async () => {
   return projects;
 };
 
-const validateProjectName = async (name: string) => {
-  if (!name) {
-    throw createError({
-      status: 400,
-      message: "Missing project name",
-    });
+const validateProjectName = async (project: string) => {
+  if (!project) {
+    throw new Error("Missing project project");
   }
 
-  if (name === "template") {
-    throw createError({
-      status: 400,
-      message: `Cannot use reserved project name ${name}`,
-    });
+  if (project === "template") {
+    throw new Error(`Cannot use reserved project project ${project}`);
   }
 
   const projects = await getProjects();
-  if (!projects.includes(name)) {
-    throw createError({
-      status: 404,
-      message: `Project ${name} not found`,
-    });
+  if (!projects.includes(project)) {
+    throw new Error(`Project ${project} not found`);
   }
-}
+};
 
-export const createProject = async (name: string) => {
-  validateProjectName(name);
+export const createProject = async (project: string) => {
+  const projects = await getProjects();
+  if (projects.includes(project)) {
+    throw new Error(`Project ${project} already exists`);
+  }
 
   // Create the project directory
-  await fs.promises.mkdir(`${projectsDir}/${name}`);
+  await fs.promises.mkdir(`${projectsDir}/${project}`);
 
   // Copy the template files to the new project
   const templateDir = `${projectsDir}/template`;
-  await fs.promises.cp(templateDir, `${projectsDir}/${name}`, {
+  await fs.promises.cp(templateDir, `${projectsDir}/${project}`, {
     recursive: true,
   });
 
-  return { message: `Project ${name} created` };
+  return { message: `Project ${project} created` };
 };
 
-export const deleteProject = async (name: string) => {
-  validateProjectName(name);
+export const deleteProject = async (project: string) => {
+  await validateProjectName(project);
 
   // Delete the project directory
-  await fs.promises.rm(`${projectsDir}/${name}`, {
+  await fs.promises.rm(`${projectsDir}/${project}`, {
     recursive: true,
   });
 
-  return { message: `Project ${name} deleted` };
-}
+  return { message: `Project ${project} deleted` };
+};
 
-export const getProject = async (name: string) => {
-  validateProjectName(name);
+export const getProject = async (project: string) => {
+  await validateProjectName(project);
 
   // Get all the files in the project directory, recursively
-  const { files, excluded } = await readdir(`${projectsDir}/${name}`, {
+  const { files, excluded } = await readdir(`${projectsDir}/${project}`, {
     recursive: true,
     exclude: ["node_modules"],
   });
@@ -76,45 +70,49 @@ export const getProject = async (name: string) => {
   return files;
 };
 
-export const installDependencies = async (name: string) => {
-  
+export const installDependencies = async (project: string) => {
+  await validateProjectName(project);
 
   // Run npm install in the project directory
   const output = execSync("npm i", {
-    cwd: `${projectsDir}/${name}`,
+    cwd: `${projectsDir}/${project}`,
   });
 
-  return {output, message: `Dependencies installed for project ${name}`};
+  return { output, message: `Dependencies installed for project ${project}` };
 };
 
-export const uninstallDependencies = async (name: string) => {
-  if (name === "template") {
-    throw createError({
-      status: 400,
-      message: `Project ${name} cannot be uninstalled`,
-    });
-  }
-
-  const projects = await getProjects();
-  if (!projects.includes(name)) {
-    throw createError({
-      status: 404,
-      message: `Project ${name} not found`,
-    });
-  }
+export const uninstallDependencies = async (project: string) => {
+  await validateProjectName(project);
 
   // Remove node_modules and package-lock.json from the project directory
-  await fs.promises.rm(`${projectsDir}/${name}/node_modules`, {
+  await fs.promises.rm(`${projectsDir}/${project}/node_modules`, {
     recursive: true,
   });
-  await fs.promises.rm(`${projectsDir}/${name}/package-lock.json`);
+  await fs.promises.rm(`${projectsDir}/${project}/package-lock.json`);
 
-  // execSync("rm -rf node_modules", {
-  //   cwd: `${projectsDir}/${name}`,
-  // });
-  // execSync("rm -rf package-lock.json", {
-  //   cwd: `${projectsDir}/${name}`,
-  // });
+  return { message: `Dependencies uninstalled for project ${project}` };
+};
 
-  return { message: `Dependencies uninstalled for project ${name}` };
-}
+export const getConcept = async (project: string, concept: string) => {
+  await validateProjectName(project);
+
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+
+  console.log("concept", concept);
+
+  // make sure the concept file exists
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  if (!fs.existsSync(conceptFile)) {
+    throw createError({
+      statusCode: 404,
+      message: `Concept ${concept} not found for project ${project}`,
+    });
+  }
+
+  // Get the file contents
+  const content = await fs.promises.readFile(conceptFile, "utf8");
+
+  return content;
+};

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-let { data: projects, refresh: refreshProjects } = useFetch("/api/projects");
+let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects");
+
+const projects = computed(() => projectsAll.value?.filter((project) => project !== "template"));
 
 const projectName = ref("");
 

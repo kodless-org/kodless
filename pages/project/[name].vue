@@ -33,9 +33,16 @@ const concepts = computed(() => {
     <li v-for="concept in concepts" :key="concept">
       <n-collapse>
         <n-collapse-item :title="concept">
-          {{ concept }}
+          <ConceptEditor :project="projectName" :concept="concept" />
         </n-collapse-item>
       </n-collapse>
     </li>
   </ul>
 </template>
+
+<style scoped>
+.concepts-list {
+  list-style: none;
+  padding: 0;
+}
+</style>

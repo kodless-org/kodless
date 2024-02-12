@@ -1,5 +1,12 @@
+<script setup lang="ts">
+import hljs from 'highlight.js/lib/core'
+import typescript from 'highlight.js/lib/languages/typescript'
+
+hljs.registerLanguage('typescript', typescript)
+</script>
+
 <template>
-  <n-config-provider inline-theme-disabled>
+  <n-config-provider inline-theme-disabled :hljs="hljs">
     <nav>
       <ul>
         <li>

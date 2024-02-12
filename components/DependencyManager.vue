@@ -85,8 +85,4 @@ const deleteProject = async () => {
   gap: 1em;
   margin: 1em 0;
 }
-.concepts-list {
-  list-style: none;
-  padding: 0;
-}
 </style>
