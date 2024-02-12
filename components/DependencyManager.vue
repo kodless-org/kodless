@@ -51,7 +51,7 @@ const deleteProject = async () => {
 <template>
   <n-alert
     v-if="!dependenciesExist && !loadingInstall"
-    type="warning"
+    type="error"
     title="Dependencies not installed"
   >
     <div>

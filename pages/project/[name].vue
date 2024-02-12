@@ -18,31 +18,33 @@ const concepts = computed(() => {
 
 <template>
   <h1>Project: {{ projectName }}</h1>
+  <n-flex vertical :size="16">
+    <DependencyManager :dependenciesExist="dependenciesExist" :projectName="projectName" @installed="refreshProject"/>
+  
+    <ProjectStatus :project="projectName" />
+  
+    <n-collapse>
+      <n-collapse-item title="Environment">
+        <EnvironmentManager :project="projectName" />
+      </n-collapse-item>
+      <n-collapse-item title="File Directory">
+        <FileTree v-if="files" :files="files" />
+        <p v-else>Loading...</p>
+      </n-collapse-item>
+    </n-collapse>
+  
+    <h2>Concepts</h2>
+    <ul class="concepts-list">
+      <li v-for="concept in concepts" :key="concept">
+        <n-collapse>
+          <n-collapse-item :title="concept">
+            <ConceptEditor :project="projectName" :concept="concept" />
+          </n-collapse-item>
+        </n-collapse>
+      </li>
+    </ul>
+  </n-flex>
 
-  <DependencyManager :dependenciesExist="dependenciesExist" :projectName="projectName" @installed="refreshProject"/>
-
-  <ProjectStatus :project="projectName" />
-
-  <n-collapse>
-    <n-collapse-item title="Environment">
-      <EnvironmentManager :project="projectName" />
-    </n-collapse-item>
-    <n-collapse-item title="File Directory">
-      <FileTree v-if="files" :files="files" />
-      <p v-else>Loading...</p>
-    </n-collapse-item>
-  </n-collapse>
-
-  <h2>Concepts</h2>
-  <ul class="concepts-list">
-    <li v-for="concept in concepts" :key="concept">
-      <n-collapse>
-        <n-collapse-item :title="concept">
-          <ConceptEditor :project="projectName" :concept="concept" />
-        </n-collapse-item>
-      </n-collapse>
-    </li>
-  </ul>
 </template>
 
 <style scoped>
