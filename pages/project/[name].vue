@@ -4,7 +4,7 @@ const route = useRoute();
 const projectName = route.params.name as string;
 
 const { data: files, refresh: refreshProject } = useFetch(
-  `/api/project/${projectName}`
+  `/api/projects/${projectName}/files`
 );
 
 const dependenciesExist = computed(() => files.value?.includes("node_modules") || false);

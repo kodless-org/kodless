@@ -13,7 +13,7 @@ const {
   data: outputs,
   refresh: install,
   status: installStatus,
-} = await useFetch(`/api/project/${projectName}/install`, {
+} = await useFetch(`/api/projects/${projectName}/install`, {
   method: "POST",
   immediate: false,
 });
@@ -26,7 +26,7 @@ const installDependencies = async () => {
 };
 
 const { refresh: uninstall, status: uninstallStatus } = await useFetch(
-  `/api/project/${projectName}/uninstall`,
+  `/api/projects/${projectName}/uninstall`,
   {
     method: "POST",
     immediate: false,

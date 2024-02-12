@@ -5,7 +5,7 @@ const { project, concept } = defineProps<{
 }>();
 
 const { data: conceptSrc, refresh: getConceptSrc } = await useFetch(
-  `/api/project/${project}/${concept}`,
+  `/api/projects/${project}/concepts/${concept}`,
   {
     method: "GET",
   }
