@@ -12,13 +12,15 @@
   "dependencies": {
     "nuxt": "^3.10.1",
     "vue": "^3.4.18",
-    "vue-router": "^4.2.5"
+    "vue-router": "^4.2.5",
+    "ws": "^8.16.0"
   },
   "overrides": {
     "@parcel/watcher": "2.1.0"
   },
   "devDependencies": {
     "@css-render/vue3-ssr": "^0.15.12",
+    "@types/ws": "^8.5.10",
     "naive-ui": "^2.37.3",
     "unplugin-auto-import": "^0.17.5",
     "unplugin-vue-components": "^0.26.0"

@@ -2,7 +2,16 @@ import fs from "fs";
 import path from "path";
 import { execSync, spawn, ChildProcess } from "child_process";
 import { readdir } from "~/server/fsutil";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
+
+import { WebSocketServer, WebSocket } from "ws";
+
+const wss = new WebSocketServer({ port: 8080 });
+
+let sockets: WebSocket[] = [];
+wss.on("connection", (ws) => {
+  sockets.push(ws);
+});
 
 const projectsDir = process.env.PROJECTS_DIRECTORY as string;
 
@@ -51,7 +60,10 @@ export const createProject = async (project: string) => {
 
   // Copy the template files to the new project
   // The template directory is under ./server/project/template
-  const templateDir = path.join(fileURLToPath(import.meta.url), "../../../template");
+  const templateDir = path.join(
+    fileURLToPath(import.meta.url),
+    "../../../template"
+  );
 
   await fs.promises.cp(templateDir, `${projectsDir}/${project}`, {
     recursive: true,
@@ -125,8 +137,6 @@ export const getConcept = async (project: string, concept: string) => {
     concept += ".ts";
   }
 
-  console.log("concept", concept);
-
   // make sure the concept file exists
   const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
   if (!fs.existsSync(conceptFile)) {
@@ -166,7 +176,10 @@ export const getProjectEnvironment = async (project: string) => {
   return env;
 };
 
-export const updateProjectEnvironment = async (project: string, env: Record<string, string>) => {
+export const updateProjectEnvironment = async (
+  project: string,
+  env: Record<string, string>
+) => {
   await validateProjectName(project);
 
   const envFile = `${projectsDir}/${project}/.env`;
@@ -190,10 +203,33 @@ export const runProject = async (project: string) => {
 
   const runner = spawn("npm", ["run", "start"], {
     cwd: `${projectsDir}/${project}`,
-    stdio: "inherit",
+  });
+
+  sockets.forEach((ws) => {
+    runner.stdout.on("data", (data) => {
+      ws.send(
+        JSON.stringify({
+          project,
+          data: data.toString(),
+        })
+      );
+    });
+
+    runner.stderr.on("data", (data) => {
+      ws.send(
+        JSON.stringify({
+          project,
+          data: data.toString(),
+        })
+      );
+    });
   });
 
   PROJECT_RUNNERS[project] = runner;
+
+  runner.on("exit", () => {
+    delete PROJECT_RUNNERS[project];
+  });
 
   return {
     message: `Project ${project} is running.`,
