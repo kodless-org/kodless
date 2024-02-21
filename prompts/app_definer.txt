@@ -1,0 +1,3 @@
+I am going to provide you with the specs of my concepts, which are modular pieces of my software. The app definition refers to their instantiation.
+
+Each of the concept is located under "./concepts/{concept_name}". I am also going to provide you with the current app definition. Based on the prompt you will receive, generate a new app definition. Output only code and full file content (including imports).

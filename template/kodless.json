@@ -1,0 +1,12 @@
+{
+  "concepts": {
+    "user.ts": {
+      "prompt": "This concept was implemented by a human.",
+      "spec": "UserDoc = {\n  username: string;\n  password: string;\n}\n\nUserConcept = {\n  constructor: (collectionName: string) => UserConcept; // instantiates a new UserConcept with the given collection name\n  async create: (username: string, password: string) => {msg: string, user: UserDoc}; // throws error if username already exists\n  async getUserById: (_id: ObjectId) => UserDoc; // throws error if user doesn't exist\n  async getUserByUsername: (username: string) => UserDoc; // throws error if user doesn't exist\n  async getUsers: (username?: string) => UserDoc[]; // returns all users if username is undefined\n  async authenticate: (username: string, password: string) => {msg: string, _id: ObjectId}; // throws error if not authenticated\n  async updatePassword: (_id: ObjectId, oldPassword: string, password: string) => {msg: string}; // throws error if user doesn't exist or old password is incorrect\n  async delete: (_id: ObjectId) => {msg: string}; // throws error if user doesn't exist\n}"
+    },
+    "websession.ts": {
+      "prompt": "This concept was implemented by a human.",
+      "spec": "WebSessionDoc = {\n  user?: string;\n}\n\nWebSessionConcept = {\n  constructor: () => WebSessionConcept;\n  start: (session: WebSessionDoc, user: ObjectId) => void; // throws error if session already has a user\n  end: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  getUser: (session: WebSessionDoc) => ObjectId; // throws error if session doesn't have a user\n  isLoggedIn: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  isLoggedOut: (session: WebSessionDoc) => void; // throws error if session already has a user\n}"
+    }
+  }
+}

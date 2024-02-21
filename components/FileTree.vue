@@ -8,8 +8,8 @@ const isDirectory = (file: string) => {
 };
 
 const getClass = (file: string) => {
-  if (file === "node_modules") {
-    return "node_modules";
+  if (file === "node_modules" || file === "dist") {
+    return "packaging";
   }
   if (isDirectory(file)) {
     return "directory";
@@ -42,7 +42,6 @@ const getClass = (file: string) => {
 ul {
   font-family: monospace;
   list-style: none;
-  padding: 0;
   border: 2px solid #3b5bdb;
   border-radius: 0.5em;
   padding: 1em;
@@ -58,7 +57,7 @@ ul li.directory::before {
   content: "📁";
   margin-right: 0.5em;
 }
-ul li.node_modules::before {
+ul li.packaging::before {
   content: "📦";
   margin-right: 0.5em;
 }

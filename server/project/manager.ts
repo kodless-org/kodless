@@ -1,10 +1,19 @@
 import fs from "fs";
 import path from "path";
-import { execSync, spawn, ChildProcess } from "child_process";
+import { exec, execSync, spawn, ChildProcess } from "child_process";
 import { readdir } from "~/server/fsutil";
 import { fileURLToPath } from "url";
 
+import {
+  generateAppDefinition,
+  generateConcept,
+  generateConceptSpec,
+  generateRoute,
+  generateUpdatedConcept,
+} from "~/server/project/ai";
+
 import { WebSocketServer, WebSocket } from "ws";
+import { parseRouterFunctions } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -83,19 +92,52 @@ export const deleteProject = async (project: string) => {
   return { message: `Project ${project} deleted` };
 };
 
+type Config = {
+  concepts: {
+    [concept: string]: {
+      prompt: string;
+      spec: string;
+    };
+  };
+};
+
+export const getProjectConfig = async (project: string): Promise<Config> => {
+  await validateProjectName(project);
+
+  const configFile = `${projectsDir}/${project}/kodless.json`;
+  let config;
+
+  if (!fs.existsSync(configFile)) {
+    config = { concepts: {} };
+  } else {
+    config = JSON.parse(await fs.promises.readFile(configFile, "utf8"));
+  }
+
+  return config;
+};
+
+export const updateProjectConfig = async (project: string, config: Config) => {
+  await validateProjectName(project);
+
+  const configFile = `${projectsDir}/${project}/kodless.json`;
+  const content = JSON.stringify(config, null, 2);
+
+  await fs.promises.writeFile(configFile, content);
+
+  return { message: `Config updated for project ${project}` };
+};
+
 export const getProjectFiles = async (project: string) => {
   await validateProjectName(project);
 
   // Get all the files in the project directory, recursively
   const { files, excluded } = await readdir(`${projectsDir}/${project}`, {
     recursive: true,
-    exclude: ["node_modules"],
+    exclude: ["node_modules", "dist"],
   });
 
-  // Found node_modules, so just add that as a directory
-  if (excluded.length) {
-    files.push("node_modules");
-  }
+  // Push excluded files to the end of the list
+  files.push(...excluded);
 
   return files;
 };
@@ -146,9 +188,125 @@ export const getConcept = async (project: string, concept: string) => {
     });
   }
 
-  // Get the file contents
-  const content = await fs.promises.readFile(conceptFile, "utf8");
-  return content;
+  const code = await fs.promises.readFile(conceptFile, "utf8");
+
+  const config = await getProjectConfig(project);
+  const conceptConfig = config.concepts[concept] || { prompt: "", spec: "" };
+
+  return {
+    code,
+    prompt: conceptConfig.prompt,
+    spec: conceptConfig.spec,
+  };
+};
+
+export const createConcept = async (
+  project: string,
+  concept: string,
+  prompt: string
+) => {
+  await validateProjectName(project);
+
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+
+  // make sure the concept file does not exist
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  if (fs.existsSync(conceptFile)) {
+    throw createError({
+      status: 400,
+      message: `Concept ${concept} already exists for project ${project}`,
+    });
+  }
+
+  const response = await generateConcept(concept, prompt);
+
+  // Create the concept file
+  await fs.promises.writeFile(conceptFile, response);
+
+  const config = await getProjectConfig(project);
+  config.concepts[concept] = { prompt, spec: "" };
+  await updateProjectConfig(project, config);
+
+  // Update the concept spec, happens in the "background"
+  await updateConceptSpec(project, concept);
+
+  return { message: `Concept ${concept} created for project ${project}` };
+};
+
+export const updateConcept = async (
+  project: string,
+  concept: string,
+  prompt: string
+) => {
+  await validateProjectName(project);
+
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  if (!fs.existsSync(conceptFile)) {
+    throw createError({
+      status: 404,
+      message: `Concept ${concept} not found for project ${project}`,
+    });
+  }
+
+  const conceptSrc = await fs.promises.readFile(conceptFile, "utf8");
+
+  const response = await generateUpdatedConcept(concept, conceptSrc, prompt);
+
+  // Update the concept file
+  await fs.promises.writeFile(conceptFile, response);
+
+  const config = await getProjectConfig(project);
+  const oldPrompt = config.concepts[concept]?.prompt;
+  config.concepts[concept] = {
+    prompt: (oldPrompt ? `${oldPrompt}\n` : "") + "Revision: " + prompt,
+    spec: "",
+  };
+  await updateProjectConfig(project, config);
+
+  // Update the concept spec, happens in the "background"
+  await updateConceptSpec(project, concept);
+
+  return { message: `Concept ${concept} updated for project ${project}` };
+};
+
+export const getProjectSpec = async (project: string) => {
+  const config = await getProjectConfig(project);
+  const specs = Object.values(config.concepts)
+    .map((c) => c.spec)
+    .join("\n");
+  return specs;
+};
+
+export const updateConceptSpec = async (project: string, concept: string) => {
+  await validateProjectName(project);
+
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  if (!fs.existsSync(conceptFile)) {
+    throw createError({
+      status: 404,
+      message: `Concept ${concept} not found for project ${project}`,
+    });
+  }
+
+  const conceptSrc = await fs.promises.readFile(conceptFile, "utf8");
+
+  const spec = await generateConceptSpec(conceptSrc);
+
+  const config = await getProjectConfig(project);
+  config.concepts[concept].spec = spec;
+  await updateProjectConfig(project, config);
+
+  return { message: `Spec for ${concept} updated for project ${project}` };
 };
 
 export const getProjectEnvironment = async (project: string) => {
@@ -252,4 +410,141 @@ export const stopProject = async (project: string) => {
   delete PROJECT_RUNNERS[project];
 
   return { message: `Project ${project} stopped` };
+};
+
+export const getRoutes = async (project: string) => {
+  await validateProjectName(project);
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+  if (!fs.existsSync(routesFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(routesFile, "utf8");
+  return parseRouterFunctions(content);
+};
+
+const addRoute = async (project: string, routeSrc: string) => {
+  await validateProjectName(project);
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+  if (!fs.existsSync(routesFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(routesFile, "utf8");
+
+  // Find the last router function and add the new route after it
+  // Hack: find the last occurence of } and add the new route right before it
+  const index = content.lastIndexOf("}");
+  const newContent = `${content.slice(0, index)}\n${routeSrc}\n${content.slice(
+    index
+  )}`;
+
+  await fs.promises.writeFile(routesFile, newContent);
+
+  // Also run "npm run format" (TODO: make this async later)
+  execSync("npm run format", {
+    cwd: `${projectsDir}/${project}`,
+  });
+
+  return { message: `Route added to project ${project}` };
+};
+
+export const createRoute = async (
+  project: string,
+  routeDescription: string
+) => {
+  await validateProjectName(project);
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+  if (!fs.existsSync(routesFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  const appDefinition = await getAppDefinition(project);
+  const spec = await getProjectSpec(project);
+
+  const code = await generateRoute(spec, appDefinition, routeDescription);
+
+  if (code.startsWith("HERE IS THE CODE ERROR:") || code.toLowerCase().startsWith("error")) {
+    throw createError({
+      status: 400,
+      message: code,
+    });
+  }
+
+  await addRoute(project, code);
+
+  return { message: `Route created for project ${project}` };
+};
+
+export const getAppDefinition = async (project: string) => {
+  await validateProjectName(project);
+
+  const appFile = `${projectsDir}/${project}/server/app.ts`;
+  if (!fs.existsSync(appFile)) {
+    throw createError({
+      status: 404,
+      message: `App file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(appFile, "utf8");
+  return content;
+};
+
+const updateRouteImports = async (project: string) => {
+  const appDefinition = await getAppDefinition(project);
+  const exportRegex = /export const (\w+)/g;
+
+  const exportedNames = [];
+  let match;
+  while ((match = exportRegex.exec(appDefinition)) !== null) {
+    exportedNames.push(match[1]);
+  }
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+  const routesContent = await fs.promises.readFile(routesFile, "utf8");
+
+  // Replace the import line with the new list of exported names
+  const importLine = `import { ${exportedNames.join(", ")} } from "./app";`;
+  const newRoutesContent = routesContent.replace(
+    /import { .* } from "\.\/app";/,
+    importLine
+  );
+
+  await fs.promises.writeFile(routesFile, newRoutesContent);
+
+  return { message: `Route imports updated for project ${project}` };
+};
+
+export const updateAppDefinition = async (project: string, prompt: string) => {
+  await validateProjectName(project);
+
+  const appFile = `${projectsDir}/${project}/server/app.ts`;
+  if (!fs.existsSync(appFile)) {
+    throw createError({
+      status: 404,
+      message: `App file not found for project ${project}`,
+    });
+  }
+
+  const spec = await getProjectSpec(project);
+  const appDefinition = await getAppDefinition(project);
+
+  const code = await generateAppDefinition(spec, appDefinition, prompt);
+  await fs.promises.writeFile(appFile, code);
+  await updateRouteImports(project);
+
+  return { message: `App definition updated for project ${project}` };
 };

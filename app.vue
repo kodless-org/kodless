@@ -48,7 +48,7 @@ nav ul li a.active {
 }
 
 main {
-  max-width: 40em;
+  max-width: 60em;
   margin: 0 auto;
 }
 </style>

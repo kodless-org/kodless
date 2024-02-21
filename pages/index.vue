@@ -1,4 +1,13 @@
 <script setup lang="ts">
+useHead({
+  title: "Kodless",
+  meta: [
+    {
+      content: "Kodless is a platform for building web applications without writing code.",
+    },
+  ],
+});
+
 let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects");
 
 const projects = computed(() => projectsAll.value?.filter((project) => project !== "template"));
