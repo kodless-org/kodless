@@ -2,7 +2,7 @@
 
 0. Clone the repository and run `npm install`.
 1. Create a file called `.env` and copy over contents from `.env.example`. The next steps explain how to fill in the values.
-2. Create a directory (folder) anywhere in your system (e.g., "projects" in your Desktop), not inside this project. Take the path of this directory and fill in the value for `PROJECTS_DIRECTORY` in `.env` (e.g., `~/Desktop/projects`).
+2. Create a directory (folder) anywhere in your system (e.g., "projects" in your Desktop), not inside this project. Take the path of this directory and fill in the value for `PROJECTS_DIRECTORY` in `.env` (e.g., `/home/barish/Desktop/projects`).
 3. Set `OPENAI_KEY` in `.env` to your OpenAI API key. I suggest creating a new key for this app so you can track usage ($$).
 4. In OpenAI dashboard, go to "Assistants" (https://platform.openai.com/assistants). There are prompts under `prompts` directory in this project. Create a new assistant for each prompt and fill in the assistant id to the corresponding value in `.env`.
 
