@@ -13,7 +13,10 @@ export const client = new MongoClient(mongoUri, {
   },
 });
 
-export const DB_NAME = "db"; // Feel free to change db name!
+export const DB_NAME = process.env.DB_NAME;
+if (!DB_NAME || DB_NAME.length === 0) {
+  throw new Error("Please set environment 'DB_NAME' to the name of your database.");
+}
 
 /**
  * Attempts to complete the connection to {@link client}.

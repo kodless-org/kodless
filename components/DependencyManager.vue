@@ -61,7 +61,7 @@ const deleteProject = async () => {
   </n-alert>
 
   <n-alert v-if="loadingInstall" type="info" title="Installing dependencies">
-    The dependencies are being installed. This could a minute, please wait and
+    The dependencies are being installed. This could take a minute, please wait and
     do not refresh the page.
   </n-alert>
 

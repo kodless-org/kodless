@@ -86,7 +86,7 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
       <li v-for="route in routes" :key="route.name">
         <n-collapse>
           <n-collapse-item :title="`${route.name} (${route.description})`">
-            <RouteEditor :project="projectName" :route="route" />
+            <RouteEditor :project="projectName" :route="route" @refresh="refreshRoutes" />
           </n-collapse-item>
         </n-collapse>
       </li>

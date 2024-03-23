@@ -78,6 +78,10 @@ export const createProject = async (project: string) => {
     recursive: true,
   });
 
+  const env = await getProjectEnvironment(project);
+  env["DB_NAME"] = project;
+  await updateProjectEnvironment(project, env);
+
   return { message: `Project ${project} created` };
 };
 
@@ -456,6 +460,38 @@ const addRoute = async (project: string, routeSrc: string) => {
 
   return { message: `Route added to project ${project}` };
 };
+
+export const deleteRoute = async (project: string, route: string) => {
+  await validateProjectName(project);
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+  if (!fs.existsSync(routesFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(routesFile, "utf8");
+
+  const pattern = new RegExp(
+    `\\s*//.*\\n\\s*@Router\\..*?\\/.*"\\)\\s*` +
+    `async\\s+${route}\\s*\\([^\\)]*\\)\\s*\\{` +
+    `[^{}]*` + // Match method body without nesting
+    `(?:\\{[^{}]*\\}[^{}]*)*` + // Match method body with simple nesting
+    `\\}`);
+
+  const newContent = content.replace(pattern, "");
+
+  await fs.promises.writeFile(routesFile, newContent);
+
+  // Also run "npm run format" (TODO: make this async later)
+  // execSync("npm run format", {
+  //   cwd: `${projectsDir}/${project}`,
+  // });
+
+  return { message: `Route deleted from project ${project}` };
+}
 
 export const createRoute = async (
   project: string,
