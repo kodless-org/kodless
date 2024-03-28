@@ -15,7 +15,7 @@ export const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(logger("dev"));
 
-app.use(cors()); // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+app.use(cors({ credentials: true, origin: true })); // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 app.use(express.json()); // Enable parsing JSON in requests and responses.
 app.use(express.urlencoded({ extended: false })); // Also enable URL encoded request and responses.
@@ -28,6 +28,7 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_SRV,
+      collectionName: process.env.DB_NAME + "-sessions",
     }),
   }),
 );

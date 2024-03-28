@@ -15,27 +15,26 @@ declare module "express-session" {
 
 export default class WebSessionConcept {
   start(session: WebSessionDoc, user: ObjectId) {
-    this.isLoggedOut(session);
+    this.assertLoggedOut(session);
     session.user = user.toString();
   }
 
   end(session: WebSessionDoc) {
-    this.isLoggedIn(session);
+    this.assertLoggedIn(session);
     session.user = undefined;
   }
 
   getUser(session: WebSessionDoc) {
-    this.isLoggedIn(session);
-    return new ObjectId(session.user);
+    return session.user ? new ObjectId(session.user) : undefined;
   }
 
-  isLoggedIn(session: WebSessionDoc) {
+  assertLoggedIn(session: WebSessionDoc) {
     if (session.user === undefined) {
       throw new UnauthenticatedError("Must be logged in!");
     }
   }
 
-  isLoggedOut(session: WebSessionDoc) {
+  assertLoggedOut(session: WebSessionDoc) {
     if (session.user !== undefined) {
       throw new NotAllowedError("Must be logged out!");
     }

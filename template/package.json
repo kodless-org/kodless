@@ -5,8 +5,8 @@
   "main": "dist/server/main.js",
   "scripts": {
     "build": "tsc",
-    "watch": "npm run build && concurrently \"tsc -w\" \"nodemon -r source-map-support/register dist/server/main.js\"",
-    "start": "npm run build && node -r source-map-support/register dist/server/main.js",
+    "watch": "npm run build; concurrently \"tsc -w\" \"nodemon -r source-map-support/register dist/server/main.js\"",
+    "start": "npm run build; node -r source-map-support/register dist/server/main.js",
     "lint": "npx eslint . --ext .ts && npx prettier . --check",
     "format": "npx eslint . --ext .ts --fix && npx prettier . --write"
   },

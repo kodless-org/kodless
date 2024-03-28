@@ -8,6 +8,7 @@ class Routes {
   // Get the currently logged in user
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
+    WebSession.assertLoggedIn(session);
     const user = WebSession.getUser(session);
     return await User.getUserById(user);
   }
@@ -27,13 +28,14 @@ class Routes {
   // Create a user
   @Router.post("/users")
   async createUser(session: WebSessionDoc, username: string, password: string) {
-    WebSession.isLoggedOut(session);
+    WebSession.assertLoggedOut(session);
     return await User.create(username, password);
   }
 
   // Change the password of the currently logged in user
   @Router.post("/password")
   async changePassword(session: WebSessionDoc, oldPassword: string, password: string) {
+    WebSession.assertLoggedIn(session);
     const user = WebSession.getUser(session);
     return await User.updatePassword(user, oldPassword, password);
   }
@@ -41,6 +43,7 @@ class Routes {
   // Delete the currently logged in user
   @Router.delete("/users")
   async deleteUser(session: WebSessionDoc) {
+    WebSession.assertLoggedIn(session);
     const user = WebSession.getUser(session);
     WebSession.end(session);
     return await User.delete(user);

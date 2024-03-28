@@ -6,7 +6,7 @@
     },
     "websession.ts": {
       "prompt": "This concept was implemented by a human.",
-      "spec": "WebSessionDoc = {\n  user?: string;\n}\n\nWebSessionConcept = {\n  constructor: () => WebSessionConcept;\n  start: (session: WebSessionDoc, user: ObjectId) => void; // throws error if session already has a user\n  end: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  getUser: (session: WebSessionDoc) => ObjectId; // throws error if session doesn't have a user\n  isLoggedIn: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  isLoggedOut: (session: WebSessionDoc) => void; // throws error if session already has a user\n}"
+      "spec": "WebSessionDoc = {\n  user?: string;\n}\n\nWebSessionConcept = {\n  constructor: () => WebSessionConcept;\n  start: (session: WebSessionDoc, user: ObjectId) => void; // throws error if session already has a user\n  end: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  getUser: (session: WebSessionDoc) => ObjectId | undefined; // returns the user in session or undefined\n  assertLoggedIn: (session: WebSessionDoc) => void; // throws error if session doesn't have a user\n  assertLoggedOut: (session: WebSessionDoc) => void; // throws error if session already has a user\n}"
     }
   }
 }
