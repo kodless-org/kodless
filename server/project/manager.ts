@@ -3,6 +3,7 @@ import path from "path";
 import { exec, execSync, spawn, ChildProcess } from "child_process";
 import { readdir } from "~/server/fsutil";
 import { fileURLToPath } from "url";
+import AsyncLock from "async-lock";
 
 import {
   generateAppDefinition,
@@ -21,6 +22,8 @@ let sockets: WebSocket[] = [];
 wss.on("connection", (ws) => {
   sockets.push(ws);
 });
+
+const lock = new AsyncLock();
 
 const projectsDir = process.env.PROJECTS_DIRECTORY as string;
 
@@ -207,9 +210,12 @@ export const getConcept = async (project: string, concept: string) => {
 export const createConcept = async (
   project: string,
   concept: string,
-  prompt: string
+  prompt: string,
+  noOverride: boolean = false
 ) => {
   await validateProjectName(project);
+
+  concept = concept.toLowerCase();
 
   if (!concept.endsWith(".ts")) {
     concept += ".ts";
@@ -217,7 +223,7 @@ export const createConcept = async (
 
   // make sure the concept file does not exist
   const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
-  if (fs.existsSync(conceptFile)) {
+  if (noOverride && fs.existsSync(conceptFile)) {
     throw createError({
       status: 400,
       message: `Concept ${concept} already exists for project ${project}`,
@@ -229,9 +235,11 @@ export const createConcept = async (
   // Create the concept file
   await fs.promises.writeFile(conceptFile, response);
 
-  const config = await getProjectConfig(project);
-  config.concepts[concept] = { prompt, spec: "" };
-  await updateProjectConfig(project, config);
+  await lock.acquire(project, async (): Promise<void> => {
+    const config = await getProjectConfig(project);
+    config.concepts[concept] = { prompt, spec: "" };
+    await updateProjectConfig(project, config);
+  });
 
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, concept);
@@ -265,13 +273,15 @@ export const updateConcept = async (
   // Update the concept file
   await fs.promises.writeFile(conceptFile, response);
 
-  const config = await getProjectConfig(project);
-  const oldPrompt = config.concepts[concept]?.prompt;
-  config.concepts[concept] = {
-    prompt: (oldPrompt ? `${oldPrompt}\n` : "") + "Revision: " + prompt,
-    spec: "",
-  };
-  await updateProjectConfig(project, config);
+  await lock.acquire(project, async (): Promise<void> => {
+    const config = await getProjectConfig(project);
+    const oldPrompt = config.concepts[concept]?.prompt;
+    config.concepts[concept] = {
+      prompt: (oldPrompt ? `${oldPrompt}\n` : "") + "Revision: " + prompt,
+      spec: "",
+    };
+    await updateProjectConfig(project, config);
+  });
 
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, concept);
@@ -306,9 +316,11 @@ export const updateConceptSpec = async (project: string, concept: string) => {
 
   const spec = await generateConceptSpec(conceptSrc);
 
-  const config = await getProjectConfig(project);
-  config.concepts[concept].spec = spec;
-  await updateProjectConfig(project, config);
+  await lock.acquire(project, async (): Promise<void> => {
+    const config = await getProjectConfig(project);
+    config.concepts[concept].spec = spec;
+    await updateProjectConfig(project, config);
+  });
 
   return { message: `Spec for ${concept} updated for project ${project}` };
 };
@@ -368,23 +380,16 @@ export const runProject = async (project: string) => {
   });
 
   sockets.forEach((ws) => {
-    runner.stdout.on("data", (data) => {
-      ws.send(
-        JSON.stringify({
-          project,
-          data: data.toString(),
-        })
-      );
-    });
-
-    runner.stderr.on("data", (data) => {
-      ws.send(
-        JSON.stringify({
-          project,
-          data: data.toString(),
-        })
-      );
-    });
+    for (const pipe of ["stdout", "stderr"] as const) {
+      runner[pipe].on("data", (data) => {
+        ws.send(
+          JSON.stringify({
+            project,
+            data: data.toString(),
+          })
+        );
+      });
+    }
   });
 
   PROJECT_RUNNERS[project] = runner;
@@ -431,6 +436,8 @@ export const getRoutes = async (project: string) => {
   return parseRouterFunctions(content);
 };
 
+const formatCalls = new Set<NodeJS.Timeout>();
+
 const addRoute = async (project: string, routeSrc: string) => {
   await validateProjectName(project);
 
@@ -441,22 +448,29 @@ const addRoute = async (project: string, routeSrc: string) => {
       message: `Routes file not found for project ${project}`,
     });
   }
+  lock.acquire(project + "_route", async (): Promise<void> => {
+    const content = await fs.promises.readFile(routesFile, "utf8");
 
-  const content = await fs.promises.readFile(routesFile, "utf8");
+    // Find the last router function and add the new route after it
+    // Hack: find the last occurence of } and add the new route right before it
+    const index = content.lastIndexOf("}");
+    const newContent = `${content.slice(
+      0,
+      index
+    )}\n${routeSrc}\n${content.slice(index)}`;
 
-  // Find the last router function and add the new route after it
-  // Hack: find the last occurence of } and add the new route right before it
-  const index = content.lastIndexOf("}");
-  const newContent = `${content.slice(0, index)}\n${routeSrc}\n${content.slice(
-    index
-  )}`;
-
-  await fs.promises.writeFile(routesFile, newContent);
-
-  // Also run "npm run format" (TODO: make this async later)
-  execSync("npm run format", {
-    cwd: `${projectsDir}/${project}`,
+    await fs.promises.writeFile(routesFile, newContent);
   });
+
+  const t = setTimeout(() => {
+    for (const call of formatCalls) {
+      clearTimeout(call);
+    }
+    execSync("npm run format", {
+      cwd: `${projectsDir}/${project}`,
+    });
+  }, 1000);
+  formatCalls.add(t);
 
   return { message: `Route added to project ${project}` };
 };
@@ -476,10 +490,11 @@ export const deleteRoute = async (project: string, route: string) => {
 
   const pattern = new RegExp(
     `\\s*//.*\\n\\s*@Router\\..*?\\/.*"\\)\\s*` +
-    `async\\s+${route}\\s*\\([^\\)]*\\)\\s*\\{` +
-    `[^{}]*` + // Match method body without nesting
-    `(?:\\{[^{}]*\\}[^{}]*)*` + // Match method body with simple nesting
-    `\\}`);
+      `async\\s+${route}\\s*\\([^\\)]*\\)\\s*\\{` +
+      `[^{}]*` + // Match method body without nesting
+      `(?:\\{[^{}]*\\}[^{}]*)*` + // Match method body with simple nesting
+      `\\}`
+  );
 
   const newContent = content.replace(pattern, "");
 
@@ -491,7 +506,7 @@ export const deleteRoute = async (project: string, route: string) => {
   // });
 
   return { message: `Route deleted from project ${project}` };
-}
+};
 
 export const createRoute = async (
   project: string,
@@ -512,7 +527,10 @@ export const createRoute = async (
 
   const code = await generateRoute(spec, appDefinition, routeDescription);
 
-  if (code.startsWith("HERE IS THE CODE ERROR:") || code.toLowerCase().startsWith("error")) {
+  if (
+    code.startsWith("HERE IS THE CODE ERROR:") ||
+    code.toLowerCase().startsWith("error")
+  ) {
     throw createError({
       status: 400,
       message: code,
