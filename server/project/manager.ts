@@ -247,6 +247,8 @@ export const createConcept = async (
 
   await instantiateConcept(project, conceptName);
 
+  await importInstantiatedConcept(project, conceptName);
+
   return { message: `Concept ${concept} created for project ${project}` };
 };
 
@@ -372,9 +374,45 @@ export const instantiateConcept = async (project: string, concept: string) => {
       concept.charAt(0).toUpperCase() + concept.slice(1)
     }`;
     const conceptImportExport = `import ${conceptCapitalized}Concept from "./concepts/${concept}";\nexport const ${conceptCapitalized} = new ${conceptCapitalized}Concept("${concept}s");`;
-    const newContent = content + "\n\n" + conceptImportExport;
+    const newContent = content + "\n" + conceptImportExport;
 
     await fs.promises.writeFile(appFile, newContent);
+  });
+};
+
+export const importInstantiatedConcept = async (
+  project: string,
+  concept: string
+) => {
+  await validateProjectName(project);
+
+  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
+
+  if (!fs.existsSync(routesFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  lock.acquire(project + "_op", async (): Promise<void> => {
+    const content = await fs.promises.readFile(routesFile, "utf8");
+
+    const conceptCapitalized = `${
+      concept.charAt(0).toUpperCase() + concept.slice(1)
+    }`;
+
+    console.log("conceptCapitalized: ", conceptCapitalized);
+
+    const index = content.indexOf(' } from "./app"');
+    const newContent = `${content.slice(
+      0,
+      index
+    )}, ${conceptCapitalized}${content.slice(index)}`;
+
+    console.log("newContent: ", newContent);
+
+    await fs.promises.writeFile(routesFile, newContent);
   });
 };
 
