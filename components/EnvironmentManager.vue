@@ -4,7 +4,7 @@ const { project } = defineProps<{
 }>();
 
 const { data: environment, refresh: refreshEnvironment } = useFetch(
-  `/api/projects/${project}/environment`
+  `/api/projects/${project}/environment/`
 );
 
 const environmentDraft = ref<{ key: string; value: string }[]>([]);
@@ -22,7 +22,7 @@ const saveEnvironment = async () => {
     env[pair.key] = pair.value;
   });
 
-  await useFetch(`/api/projects/${project}/environment`, {
+  await useFetch(`/api/projects/${project}/environment/`, {
     method: "PUT",
     body: { env },
   });

@@ -5,7 +5,7 @@ const { project, concept } = defineProps<{
 }>();
 
 const { data: conceptData, refresh: refreshConcept } = await useFetch(
-  `/api/projects/${project}/concepts/${concept}`,
+  `/api/projects/${project}/concepts/${concept}/`,
   {
     method: "GET",
   }
@@ -16,7 +16,7 @@ const updatePending = ref(false);
 const updateConcept = async () => {
   updatePending.value = true;
   await useFetch(
-    `/api/projects/${project}/concepts/${concept}`,
+    `/api/projects/${project}/concepts/${concept}/`,
     {
       method: "POST",
       body: { prompt: prompt.value },

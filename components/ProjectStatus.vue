@@ -4,14 +4,14 @@ const { project } = defineProps<{
 }>();
 
 const { data: statusWrap, refresh: refreshStatus } = useFetch(
-  `/api/projects/${project}/status`
+  `/api/projects/${project}/status/`
 );
 
 const status = computed(() => statusWrap.value?.status);
 const logs = ref<string>("");
 
 const runProject = async () => {
-  await useFetch(`/api/projects/${project}/run`, {
+  await useFetch(`/api/projects/${project}/run/`, {
     method: "POST",
   });
   logs.value = "";
@@ -19,7 +19,7 @@ const runProject = async () => {
 };
 
 const stopProject = async () => {
-  await useFetch(`/api/projects/${project}/stop`, {
+  await useFetch(`/api/projects/${project}/stop/`, {
     method: "POST",
   });
   refreshStatus();

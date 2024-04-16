@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 const router = useRouter();
 
 const { dependenciesExist, projectName } = defineProps<{
@@ -13,7 +12,7 @@ const {
   data: outputs,
   refresh: install,
   status: installStatus,
-} = await useFetch(`/api/projects/${projectName}/install`, {
+} = await useFetch(`/api/projects/${projectName}/install/`, {
   method: "POST",
   immediate: false,
 });
@@ -26,7 +25,7 @@ const installDependencies = async () => {
 };
 
 const { refresh: uninstall, status: uninstallStatus } = await useFetch(
-  `/api/projects/${projectName}/uninstall`,
+  `/api/projects/${projectName}/uninstall/`,
   {
     method: "POST",
     immediate: false,
@@ -42,7 +41,9 @@ const uninstallDependencies = async () => {
 
 const deleteProject = async () => {
   if (confirm("Are you sure you want to delete this project?")) {
-    await fetch(`/api/project/${projectName}`, { method: "DELETE" });
+    await useFetch(`/api/projects/${projectName}/`, {
+      method: "DELETE",
+    });
     router.push("/");
   }
 };
@@ -61,8 +62,8 @@ const deleteProject = async () => {
   </n-alert>
 
   <n-alert v-if="loadingInstall" type="info" title="Installing dependencies">
-    The dependencies are being installed. This could take a minute, please wait and
-    do not refresh the page.
+    The dependencies are being installed. This could take a minute, please wait
+    and do not refresh the page.
   </n-alert>
 
   <div class="actions">
@@ -74,8 +75,17 @@ const deleteProject = async () => {
       :loading="loadingInstall"
       >Install dependencies</n-button
     >
-    <n-button type="warning" round @click="uninstallDependencies" :loading="loadingUninstall" v-else>Delete dependencies</n-button>
-    <n-button type="error" round @click="deleteProject">Delete the project</n-button>
+    <n-button
+      type="warning"
+      round
+      @click="uninstallDependencies"
+      :loading="loadingUninstall"
+      v-else
+      >Delete dependencies</n-button
+    >
+    <n-button type="error" round @click="deleteProject"
+      >Delete the project</n-button
+    >
   </div>
 </template>
 

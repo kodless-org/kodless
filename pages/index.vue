@@ -8,14 +8,14 @@ useHead({
   ],
 });
 
-let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects");
+let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects/");
 
 const projects = computed(() => projectsAll.value?.filter((project) => project !== "template"));
 
 const projectName = ref("");
 
 const createProject = async () => {
-  await useFetch("/api/projects", {
+  await useFetch("/api/projects/", {
     method: "POST",
     body: { name: projectName.value },
   });
