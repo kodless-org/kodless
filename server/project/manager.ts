@@ -31,6 +31,9 @@ const PROJECT_RUNNERS: Record<string, ChildProcess> = {};
 
 export const getProjects = async () => {
   const projects = await fs.promises.readdir(projectsDir);
+  if (projects.includes(".git")) {
+    projects.splice(projects.indexOf(".git"), 1);
+  }
   return projects;
 };
 
