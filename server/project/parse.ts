@@ -79,7 +79,7 @@ export function parseRouterFunctions(code: string) {
   return routerFunctions;
 }
 
-export function parseRoute(code: string) {
+export function createOperation(code: string) {
   const routeRegExp =
     /@Router\.(get|post)\("([^"]+)"\)\s+async\s+(\w+)\(((?:\s*\w+\s*:\s*\w+\s*,?\s*)+)\)\s*{/;
   const match = routeRegExp.exec(code);

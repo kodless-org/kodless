@@ -14,7 +14,7 @@ import {
 } from "~/server/project/ai";
 
 import { WebSocketServer, WebSocket } from "ws";
-import { parseRouterFunctions, parseRoute } from "./parse";
+import { parseRouterFunctions, createOperation } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -215,7 +215,8 @@ export const createConcept = async (
 ) => {
   await validateProjectName(project);
 
-  concept = concept.toLowerCase();
+  const conceptName = concept.toLowerCase();
+  concept = conceptName;
 
   if (!concept.endsWith(".ts")) {
     concept += ".ts";
@@ -243,6 +244,8 @@ export const createConcept = async (
 
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, concept);
+
+  await instantiateConcept(project, conceptName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
@@ -348,6 +351,31 @@ export const getProjectEnvironment = async (project: string) => {
   }
 
   return env;
+};
+
+export const instantiateConcept = async (project: string, concept: string) => {
+  await validateProjectName(project);
+
+  const appFile = `${projectsDir}/${project}/server/app.ts`;
+
+  if (!fs.existsSync(appFile)) {
+    throw createError({
+      status: 404,
+      message: `App file not found for project ${project}`,
+    });
+  }
+
+  lock.acquire(project + "_concept", async (): Promise<void> => {
+    const content = await fs.promises.readFile(appFile, "utf8");
+
+    const conceptCapitalized = `${
+      concept.charAt(0).toUpperCase() + concept.slice(1)
+    }`;
+    const conceptImportExport = `import ${conceptCapitalized}Concept from "./concepts/${concept}";\nexport const ${conceptCapitalized} = new ${conceptCapitalized}Concept("${concept}s");`;
+    const newContent = content + "\n\n" + conceptImportExport;
+
+    await fs.promises.writeFile(appFile, newContent);
+  });
 };
 
 export const updateProjectEnvironment = async (
@@ -483,7 +511,7 @@ export const addOperation = async (project: string, operation: string) => {
   if (!fs.existsSync(operationsFile)) {
     throw createError({
       status: 404,
-      message: `Routes file not found for project ${project}`,
+      message: `Operations file not found for project ${project}`,
     });
   }
 
@@ -576,7 +604,7 @@ export const createRoute = async (
 
   await addRoute(project, code);
 
-  const operation = parseRoute(code) ?? "";
+  const operation = createOperation(code) ?? "";
 
   await addOperation(project, operation);
 
