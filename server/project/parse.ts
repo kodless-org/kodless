@@ -112,12 +112,6 @@ export function parseRoute(code: string) {
       separatedFunctionName.charAt(0).toUpperCase() +
       separatedFunctionName.slice(1);
 
-    return `
-    {
-      name: "${capitalizedFunctionName}",
-      endpoint: "/api${endpoint}",
-      method: "${method.toUpperCase()}",
-      fields: ${fieldsString},
-    },`;
+    return `\t{\n\t\tname: "${capitalizedFunctionName}",\n\t\tendpoint: "/api${endpoint}",\n\t\tmethod: "${method.toUpperCase()}",\n\t\tfields: ${fieldsString},\n\t},`;
   }
 }

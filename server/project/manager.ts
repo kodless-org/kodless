@@ -475,6 +475,43 @@ const addRoute = async (project: string, routeSrc: string) => {
   return { message: `Route added to project ${project}` };
 };
 
+export const addOperation = async (project: string, operation: string) => {
+  await validateProjectName(project);
+
+  const operationsFile = `${projectsDir}/${project}/public/util.ts`;
+
+  if (!fs.existsSync(operationsFile)) {
+    throw createError({
+      status: 404,
+      message: `Routes file not found for project ${project}`,
+    });
+  }
+
+  lock.acquire(project + "_op", async (): Promise<void> => {
+    const content = await fs.promises.readFile(operationsFile, "utf8");
+
+    const match = content.match(
+      /const operations: operation\[\] = \[(\s|.)*?\];/
+    );
+    if (!match) {
+      console.error("Operations variable not found");
+      return;
+    }
+
+    const oldOperations = match[0];
+
+    const index = oldOperations.indexOf("];");
+    const newOperations = `${oldOperations.slice(
+      0,
+      index
+    )}${operation}\n${oldOperations.slice(index)}`;
+
+    const newContent = content.replace(oldOperations, newOperations);
+
+    await fs.promises.writeFile(operationsFile, newContent);
+  });
+};
+
 export const deleteRoute = async (project: string, route: string) => {
   await validateProjectName(project);
 
@@ -539,7 +576,9 @@ export const createRoute = async (
 
   await addRoute(project, code);
 
-  console.log(parseRoute(code));
+  const operation = parseRoute(code) ?? "";
+
+  await addOperation(project, operation);
 
   return { message: `Route created for project ${project}` };
 };
