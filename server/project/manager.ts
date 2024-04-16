@@ -14,7 +14,7 @@ import {
 } from "~/server/project/ai";
 
 import { WebSocketServer, WebSocket } from "ws";
-import { parseRouterFunctions } from "./parse";
+import { parseRouterFunctions, parseRoute } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -538,6 +538,8 @@ export const createRoute = async (
   }
 
   await addRoute(project, code);
+
+  console.log(parseRoute(code));
 
   return { message: `Route created for project ${project}` };
 };

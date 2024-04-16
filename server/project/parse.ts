@@ -52,13 +52,14 @@ export function parseRouterFunctions(code: string) {
       const commentLines = comment.split("\n");
       const description = commentLines
         .map((line) => line.replace(/\/\/\s?/, ""))
-        .join("\n").trim();
+        .join("\n")
+        .trim();
 
       const functionStr = code.substring(nonCommentIndex, endIndex + 1);
 
       const name = functionStr.match(/(?<=async\s)\w+/)?.[0] || "";
       const method = functionStr.split("(")[0].split(".")[1];
-      
+
       // Extract the endpoint from the @Router decorator
       const firstBracket = functionStr.indexOf("(");
       const nextBracket = functionStr.indexOf(")", firstBracket + 1);
@@ -76,4 +77,47 @@ export function parseRouterFunctions(code: string) {
   }
 
   return routerFunctions;
+}
+
+export function parseRoute(code: string) {
+  const routeRegExp =
+    /@Router\.(get|post)\("([^"]+)"\)\s+async\s+(\w+)\(((?:\s*\w+\s*:\s*\w+\s*,?\s*)+)\)\s*{/;
+  const match = routeRegExp.exec(code);
+
+  if (match) {
+    const method = match[1];
+    const endpoint = match[2];
+    const functionName = match[3];
+    const params = match[4]
+      .split(",")
+      .map((param) => {
+        const paramName = param.trim().split(":")[0];
+        return paramName;
+      })
+      .filter((param) => param !== "" && !param.startsWith("session"));
+
+    let fieldsString = "{";
+    params.forEach((param, index) => {
+      fieldsString += `${param}: "input"`;
+      if (index !== params.length - 1) {
+        fieldsString += ", ";
+      }
+    });
+    fieldsString += "}";
+
+    const separatedFunctionName = functionName
+      .replace(/([A-Z])/g, " $1")
+      .trim();
+    const capitalizedFunctionName =
+      separatedFunctionName.charAt(0).toUpperCase() +
+      separatedFunctionName.slice(1);
+
+    return `
+    {
+      name: "${capitalizedFunctionName}",
+      endpoint: "/api${endpoint}",
+      method: "${method.toUpperCase()}",
+      fields: ${fieldsString},
+    },`;
+  }
 }
