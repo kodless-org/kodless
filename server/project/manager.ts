@@ -207,6 +207,19 @@ export const getConcept = async (project: string, concept: string) => {
   };
 };
 
+const conceptFileName = (concept: string) => {
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+  return concept.toLowerCase().replace(/\s/g, "");
+};
+
+const conceptTitleCase = (concept: string) => {
+  return concept
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+    .replace(/\s/g, "");
+};
+
 export const createConcept = async (
   project: string,
   concept: string,
@@ -215,39 +228,38 @@ export const createConcept = async (
 ) => {
   await validateProjectName(project);
 
-  const conceptName = concept.toLowerCase();
-  concept = conceptName;
+  const conceptFileTitle = conceptFileName(concept);
+  const conceptName = conceptTitleCase(concept);
 
-  if (!concept.endsWith(".ts")) {
-    concept += ".ts";
-  }
+  console.log("concept file title: ", conceptFileTitle);
+  console.log("concept name: ", conceptName);
 
   // make sure the concept file does not exist
-  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${conceptFileTitle}`;
   if (noOverride && fs.existsSync(conceptFile)) {
     throw createError({
       status: 400,
-      message: `Concept ${concept} already exists for project ${project}`,
+      message: `Concept ${conceptFileTitle} already exists for project ${project}`,
     });
   }
 
-  const response = await generateConcept(concept, prompt);
+  const response = await generateConcept(conceptFileTitle, prompt);
 
   // Create the concept file
   await fs.promises.writeFile(conceptFile, response);
 
   await lock.acquire(project, async (): Promise<void> => {
     const config = await getProjectConfig(project);
-    config.concepts[concept] = { prompt, spec: "" };
+    config.concepts[conceptFileTitle] = { prompt, spec: "" };
     await updateProjectConfig(project, config);
   });
 
   // Update the concept spec, happens in the "background"
-  await updateConceptSpec(project, concept);
+  await updateConceptSpec(project, conceptFileTitle);
 
   await instantiateConcept(project, conceptName);
 
-  await importInstantiatedConcept(project, conceptName);
+  await importInstantiatedConcept(project, conceptFileTitle, conceptName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
@@ -355,7 +367,10 @@ export const getProjectEnvironment = async (project: string) => {
   return env;
 };
 
-export const instantiateConcept = async (project: string, concept: string) => {
+export const instantiateConcept = async (
+  project: string,
+  conceptName: string
+) => {
   await validateProjectName(project);
 
   const appFile = `${projectsDir}/${project}/server/app.ts`;
@@ -370,10 +385,7 @@ export const instantiateConcept = async (project: string, concept: string) => {
   lock.acquire(project + "_concept", async (): Promise<void> => {
     const content = await fs.promises.readFile(appFile, "utf8");
 
-    const conceptCapitalized = `${
-      concept.charAt(0).toUpperCase() + concept.slice(1)
-    }`;
-    const conceptImportExport = `import ${conceptCapitalized}Concept from "./concepts/${concept}";\nexport const ${conceptCapitalized} = new ${conceptCapitalized}Concept("${concept}s");`;
+    const conceptImportExport = `import ${conceptName}Concept from "./concepts/${conceptName.toLowerCase()}";\nexport const ${conceptName} = new ${conceptName}Concept("${conceptName.toLowerCase()}s");`;
     const newContent = content + "\n" + conceptImportExport;
 
     await fs.promises.writeFile(appFile, newContent);
@@ -382,7 +394,8 @@ export const instantiateConcept = async (project: string, concept: string) => {
 
 export const importInstantiatedConcept = async (
   project: string,
-  concept: string
+  conceptFileTitle: string,
+  conceptName: string
 ) => {
   await validateProjectName(project);
 
@@ -398,19 +411,11 @@ export const importInstantiatedConcept = async (
   lock.acquire(project + "_op", async (): Promise<void> => {
     const content = await fs.promises.readFile(routesFile, "utf8");
 
-    const conceptCapitalized = `${
-      concept.charAt(0).toUpperCase() + concept.slice(1)
-    }`;
-
-    console.log("conceptCapitalized: ", conceptCapitalized);
-
     const index = content.indexOf(' } from "./app"');
     const newContent = `${content.slice(
       0,
       index
-    )}, ${conceptCapitalized}${content.slice(index)}`;
-
-    console.log("newContent: ", newContent);
+    )}, ${conceptName}${content.slice(index)}`;
 
     await fs.promises.writeFile(routesFile, newContent);
   });
