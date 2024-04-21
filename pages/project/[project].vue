@@ -61,7 +61,7 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
         <n-collapse>
           <n-collapse-item :title="concept">
             <template #arrow> 💡 </template>
-            <ConceptEditor :project="projectName" :concept="concept" />
+            <ConceptEditor :project="projectName" :concept="concept" @refresh="refreshProject" />
           </n-collapse-item>
         </n-collapse>
       </li>
