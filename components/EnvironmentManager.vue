@@ -52,7 +52,7 @@ const changes = computed(() => {
       value-placeholder="Value"
     />
     <n-flex justify="end">
-      <n-button round type="warning" :ghost="!changes" @click="refreshEnvironment" :disabled="!changes"> Reset </n-button>
+      <n-button round type="warning" :ghost="!changes" @click="() => refreshEnvironment()" :disabled="!changes"> Reset </n-button>
       <n-button round type="info" :ghost="!changes" @click="saveEnvironment" :disabled="!changes"> Save </n-button>
     </n-flex>
   </n-flex>

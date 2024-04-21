@@ -1,16 +1,22 @@
 <script setup lang="ts">
+// import { NCollapse, NCollapseItem, NForm, NFormItem, NButton } from "naive-ui";
+
 useHead({
   title: "Kodless",
   meta: [
     {
-      content: "Kodless is a platform for building web applications without writing code.",
+      content:
+        "Kodless is a platform for building web applications without writing code.",
     },
   ],
 });
 
-let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects/");
+let { data: projectsAll, refresh: refreshProjects } =
+  await useFetch("/api/projects/");
 
-const projects = computed(() => projectsAll.value?.filter((project) => project !== "template"));
+const projects = computed(() =>
+  projectsAll.value?.filter((project) => project !== "template")
+);
 
 const projectName = ref("");
 
