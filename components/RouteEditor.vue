@@ -18,7 +18,7 @@ const emit = defineEmits(["refresh"]);
 const pending = ref(false);
 const deleteRoute = async () => {
   pending.value = true;
-  await useFetch(`/api/projects/${project}/routes/${route.name}/`, {
+  fetchy(`/api/projects/${project}/routes/${route.name}/`, {
     method: "DELETE",
   });
   pending.value = false;

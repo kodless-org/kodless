@@ -22,7 +22,7 @@ const saveEnvironment = async () => {
     env[pair.key] = pair.value;
   });
 
-  await useFetch(`/api/projects/${project}/environment/`, {
+  fetchy(`/api/projects/${project}/environment/`, {
     method: "PUT",
     body: { env },
   });

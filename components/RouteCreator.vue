@@ -9,7 +9,7 @@ const prompt = ref("");
 const pending = ref(false);
 // TODO: use pending from useFetch later
 const createRoute = async (prompt: string) => {
-  await useFetch(`/api/projects/${project}/routes/`, {
+  fetchy(`/api/projects/${project}/routes/`, {
     method: "POST",
     body: {
       prompt,

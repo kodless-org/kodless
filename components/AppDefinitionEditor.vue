@@ -9,7 +9,7 @@ const prompt = ref("");
 const loading = ref(false);
 const updateAppDefinition = async () => {
   loading.value = true;
-  await useFetch(`/api/projects/${project}/app/`, {
+  await fetchy(`/api/projects/${project}/app/`, {
     method: "POST",
     body: { prompt: prompt.value },
   });

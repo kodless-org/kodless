@@ -9,7 +9,6 @@ const { dependenciesExist, projectName } = defineProps<{
 const emit = defineEmits(["installed"]);
 
 const {
-  data: outputs,
   refresh: install,
   status: installStatus,
 } = await useFetch(`/api/projects/${projectName}/install/`, {
@@ -41,7 +40,7 @@ const uninstallDependencies = async () => {
 
 const deleteProject = async () => {
   if (confirm("Are you sure you want to delete this project?")) {
-    await useFetch(`/api/projects/${projectName}/`, {
+    fetchy(`/api/projects/${projectName}/`, {
       method: "DELETE",
     });
     router.push("/");

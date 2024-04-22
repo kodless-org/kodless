@@ -9,10 +9,10 @@ const newConcept = reactive({
   name: "",
   prompt: "",
 });
-// TODO: use pending from useFetch later
+
 const loading = ref(false);
 const createConcept = async (name: string, prompt: string) => {
-  await useFetch(`/api/projects/${project}/concepts/`, {
+  await fetchy(`/api/projects/${project}/concepts/`, {
     method: "POST",
     body: {
       concept: name,

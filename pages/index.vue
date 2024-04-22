@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// import { NCollapse, NCollapseItem, NForm, NFormItem, NButton } from "naive-ui";
-
 useHead({
   title: "Kodless",
   meta: [
@@ -21,7 +19,7 @@ const projects = computed(() =>
 const projectName = ref("");
 
 const createProject = async () => {
-  await useFetch("/api/projects/", {
+  await fetchy("/api/projects/", {
     method: "POST",
     body: { name: projectName.value },
   });

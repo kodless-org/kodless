@@ -17,7 +17,7 @@ const prompt = ref("");
 const updatePending = ref(false);
 const handleUpdate = async () => {
   updatePending.value = true;
-  await useFetch(
+  await fetchy(
     `/api/projects/${project}/concepts/${concept}/`,
     {
       method: "POST",
@@ -29,7 +29,7 @@ const handleUpdate = async () => {
 };
 
 const handleDelete = async () => {
-  await useFetch(`/api/projects/${project}/concepts/${concept}/`, {
+  await fetchy(`/api/projects/${project}/concepts/${concept}/`, {
     method: "DELETE",
   });
   emit("refresh");
