@@ -231,9 +231,6 @@ export const createConcept = async (
   const conceptFileTitle = conceptFileName(concept);
   const conceptName = conceptTitleCase(concept);
 
-  console.log("concept file title: ", conceptFileTitle);
-  console.log("concept name: ", conceptName);
-
   // make sure the concept file does not exist
   const conceptFile = `${projectsDir}/${project}/server/concepts/${conceptFileTitle}`;
   if (noOverride && fs.existsSync(conceptFile)) {
