@@ -27,7 +27,7 @@ export const readdir = async (
         continue;
       }
       fileList.push(fullPath);
-      if (file.isDirectory()) {
+      if (file.isDirectory() && options?.recursive) {
         await walk(fullPath);
       }
     }

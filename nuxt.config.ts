@@ -13,6 +13,7 @@ export default defineNuxtConfig({
           "NButton",
           "NIcon",
           "NInput",
+          "NSelect",
           "NForm",
           "NFormItem",
           "NCollapse",

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { exec, execSync, spawn, ChildProcess } from "child_process";
+import { execSync, spawn, ChildProcess } from "child_process";
 import { readdir } from "~/server/fsutil";
 import { fileURLToPath } from "url";
 import AsyncLock from "async-lock";
@@ -13,6 +13,7 @@ import {
   generateUpdatedConcept,
 } from "~/server/project/ai";
 
+
 import { WebSocketServer, WebSocket } from "ws";
 import { parseRouterFunctions } from "./parse";
 
@@ -23,9 +24,9 @@ wss.on("connection", (ws) => {
   sockets.push(ws);
 });
 
-const lock = new AsyncLock();
+export const lock = new AsyncLock();
 
-const projectsDir = process.env.PROJECTS_DIRECTORY as string;
+export const projectsDir = process.env.PROJECTS_DIRECTORY as string;
 
 const PROJECT_RUNNERS: Record<string, ChildProcess> = {};
 
@@ -37,7 +38,7 @@ export const getProjects = async () => {
   return projects;
 };
 
-const validateProjectName = async (project: string) => {
+export const validateProjectName = async (project: string) => {
   if (!project) {
     throw createError({
       status: 400,
