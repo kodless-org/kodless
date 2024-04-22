@@ -19,9 +19,11 @@ export default defineNuxtConfig({
           "NCollapseItem",
           "NFlex",
           "NCode",
-          "NAlert"
+          "NAlert",
+          "NConfigProvider",
+          "NMessageProvider",
         ],
-      },
+      }
     ],
   },
   build: {

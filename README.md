@@ -6,3 +6,8 @@
 3. Set `OPENAI_KEY` in `.env` to your OpenAI API key. I suggest creating a new key for this app so you can track usage ($$). Note that by default the app uses `gpt-4-turbo-preview` engine.
 
 Now, you are ready to use the app by typing `npm run dev` in the terminal. This will start the server and you can access the app at `http://localhost:3000`.
+
+# TODO
+
+- [ ] Use a different UI framework due to bad incompability of Naive UI with Nuxt.
+ - Options are Nuxt UI, PrimeVue, etc.
