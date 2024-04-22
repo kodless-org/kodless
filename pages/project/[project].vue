@@ -11,7 +11,7 @@ useHead({
 });
 
 const { data: files, refresh: refreshProject } = useFetch(
-  `/api/projects/${projectName}/files`
+  `/api/projects/${projectName}/files/`
 );
 
 const dependenciesExist = computed(
@@ -24,7 +24,7 @@ const concepts = computed(() => {
     .map((file: string) => file.split("/")[2]);
 });
 
-const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${projectName}/routes`);
+const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${projectName}/routes/`);
 </script>
 
 <template>
@@ -61,7 +61,7 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
         <n-collapse>
           <n-collapse-item :title="concept">
             <template #arrow> 💡 </template>
-            <ConceptEditor :project="projectName" :concept="concept" />
+            <ConceptEditor :project="projectName" :concept="concept" @refresh="refreshProject" />
           </n-collapse-item>
         </n-collapse>
       </li>

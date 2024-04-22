@@ -4,7 +4,26 @@ import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: { enabled: false },
+  imports: {
+    presets: [
+      {
+        from: "naive-ui",
+        imports: [
+          "NButton",
+          "NIcon",
+          "NInput",
+          "NForm",
+          "NFormItem",
+          "NCollapse",
+          "NCollapseItem",
+          "NFlex",
+          "NCode",
+          "NAlert"
+        ],
+      },
+    ],
+  },
   build: {
     transpile:
       process.env.NODE_ENV === "production"

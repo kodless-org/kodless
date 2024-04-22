@@ -3,19 +3,23 @@ useHead({
   title: "Kodless",
   meta: [
     {
-      content: "Kodless is a platform for building web applications without writing code.",
+      content:
+        "Kodless is a platform for building web applications without writing code.",
     },
   ],
 });
 
-let { data: projectsAll, refresh: refreshProjects } = useFetch("/api/projects");
+let { data: projectsAll, refresh: refreshProjects } =
+  await useFetch("/api/projects/");
 
-const projects = computed(() => projectsAll.value?.filter((project) => project !== "template"));
+const projects = computed(() =>
+  projectsAll.value?.filter((project) => project !== "template")
+);
 
 const projectName = ref("");
 
 const createProject = async () => {
-  await useFetch("/api/projects", {
+  await fetchy("/api/projects/", {
     method: "POST",
     body: { name: projectName.value },
   });

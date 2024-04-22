@@ -31,6 +31,9 @@ const PROJECT_RUNNERS: Record<string, ChildProcess> = {};
 
 export const getProjects = async () => {
   const projects = await fs.promises.readdir(projectsDir);
+  if (projects.includes(".git")) {
+    projects.splice(projects.indexOf(".git"), 1);
+  }
   return projects;
 };
 
@@ -302,6 +305,33 @@ export const updateConcept = async (
 
   return { message: `Concept ${concept} updated for project ${project}` };
 };
+
+export const deleteConcept = async (project: string, concept: string) => {
+  await validateProjectName(project);
+
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  if (!fs.existsSync(conceptFile)) {
+    throw createError({
+      status: 404,
+      message: `Concept ${concept} not found for project ${project}`,
+    });
+  }
+
+  // Delete the concept file
+  await fs.promises.rm(conceptFile);
+
+  await lock.acquire(project, async (): Promise<void> => {
+    const config = await getProjectConfig(project);
+    delete config.concepts[concept];
+    await updateProjectConfig(project, config);
+  });
+
+  return { message: `Concept ${concept} deleted for project ${project}` };
+}
 
 export const getProjectSpec = async (project: string) => {
   const config = await getProjectConfig(project);

@@ -4,7 +4,7 @@ const { project } = defineProps<{
 }>();
 
 const { data: environment, refresh: refreshEnvironment } = useFetch(
-  `/api/projects/${project}/environment`
+  `/api/projects/${project}/environment/`
 );
 
 const environmentDraft = ref<{ key: string; value: string }[]>([]);
@@ -22,7 +22,7 @@ const saveEnvironment = async () => {
     env[pair.key] = pair.value;
   });
 
-  await useFetch(`/api/projects/${project}/environment`, {
+  fetchy(`/api/projects/${project}/environment/`, {
     method: "PUT",
     body: { env },
   });
@@ -52,7 +52,7 @@ const changes = computed(() => {
       value-placeholder="Value"
     />
     <n-flex justify="end">
-      <n-button round type="warning" :ghost="!changes" @click="refreshEnvironment" :disabled="!changes"> Reset </n-button>
+      <n-button round type="warning" :ghost="!changes" @click="() => refreshEnvironment()" :disabled="!changes"> Reset </n-button>
       <n-button round type="info" :ghost="!changes" @click="saveEnvironment" :disabled="!changes"> Save </n-button>
     </n-flex>
   </n-flex>

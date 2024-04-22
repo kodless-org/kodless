@@ -4,8 +4,10 @@ const { project, concept } = defineProps<{
   concept: string;
 }>();
 
+const emit = defineEmits(["refresh"]);
+
 const { data: conceptData, refresh: refreshConcept } = await useFetch(
-  `/api/projects/${project}/concepts/${concept}`,
+  `/api/projects/${project}/concepts/${concept}/`,
   {
     method: "GET",
   }
@@ -13,10 +15,10 @@ const { data: conceptData, refresh: refreshConcept } = await useFetch(
 
 const prompt = ref("");
 const updatePending = ref(false);
-const updateConcept = async () => {
+const handleUpdate = async () => {
   updatePending.value = true;
-  await useFetch(
-    `/api/projects/${project}/concepts/${concept}`,
+  await fetchy(
+    `/api/projects/${project}/concepts/${concept}/`,
     {
       method: "POST",
       body: { prompt: prompt.value },
@@ -25,6 +27,14 @@ const updateConcept = async () => {
   updatePending.value = false;
   refreshConcept();
 };
+
+const handleDelete = async () => {
+  await fetchy(`/api/projects/${project}/concepts/${concept}/`, {
+    method: "DELETE",
+  });
+  emit("refresh");
+};
+
 </script>
 
 <template>
@@ -36,13 +46,16 @@ const updateConcept = async () => {
         <n-form-item label="Revision prompt">
           <n-input v-model:value="prompt" type="textarea" />
         </n-form-item>
-        <n-button
-          @click="updateConcept"
-          round
-          type="primary"
-          :loading="updatePending"
-          >Update</n-button
-        >
+        <n-flex :size="8">
+          <n-button
+            @click="handleUpdate"
+            round
+            type="primary"
+            :loading="updatePending"
+            >Update</n-button
+          >
+          <n-button type="error" @click="handleDelete" round style="width: fit-content">Delete concept</n-button>
+        </n-flex>
       </n-form>
     </article>
 

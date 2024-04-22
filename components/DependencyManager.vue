@@ -8,14 +8,13 @@ const { dependenciesExist, projectName } = defineProps<{
 
 const emit = defineEmits(["installed"]);
 
-const {
-  data: outputs,
-  refresh: install,
-  status: installStatus,
-} = await useFetch(`/api/projects/${projectName}/install`, {
-  method: "POST",
-  immediate: false,
-});
+const { refresh: install, status: installStatus } = await useFetch(
+  `/api/projects/${projectName}/install/`,
+  {
+    method: "POST",
+    immediate: false,
+  }
+);
 
 const loadingInstall = computed(() => installStatus.value === "pending");
 
@@ -25,7 +24,7 @@ const installDependencies = async () => {
 };
 
 const { refresh: uninstall, status: uninstallStatus } = await useFetch(
-  `/api/projects/${projectName}/uninstall`,
+  `/api/projects/${projectName}/uninstall/`,
   {
     method: "POST",
     immediate: false,
@@ -41,7 +40,9 @@ const uninstallDependencies = async () => {
 
 const deleteProject = async () => {
   if (confirm("Are you sure you want to delete this project?")) {
-    await fetch(`/api/projects/${projectName}`, { method: "DELETE" });
+    fetchy(`/api/projects/${projectName}/`, {
+      method: "DELETE",
+    });
     router.push("/");
   }
 };

@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import hljs from 'highlight.js/lib/core'
-import typescript from 'highlight.js/lib/languages/typescript'
+import hljs from "highlight.js/lib/core";
+import typescript from "highlight.js/lib/languages/typescript";
 
-hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage("typescript", typescript);
 </script>
 
 <template>
   <n-config-provider inline-theme-disabled :hljs="hljs">
-    <nav>
-      <ul>
-        <li>
-          <RouterLink to="/" :class="{active: $route.path === '/'}">Home</RouterLink>
-        </li>
-      </ul>
-    </nav>
-    <main>
-      <NuxtPage />
-    </main>
+    <n-message-provider>
+      <nav>
+        <ul>
+          <li>
+            <RouterLink to="/" :class="{ active: $route.path === '/' }"
+              >Home</RouterLink
+            >
+          </li>
+        </ul>
+      </nav>
+      <main>
+        <NuxtPage />
+      </main>
+    </n-message-provider>
   </n-config-provider>
 </template>
 
