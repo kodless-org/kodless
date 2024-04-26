@@ -13,15 +13,18 @@ export default defineNuxtConfig({
           "NButton",
           "NIcon",
           "NInput",
+          "NSelect",
           "NForm",
           "NFormItem",
           "NCollapse",
           "NCollapseItem",
           "NFlex",
           "NCode",
-          "NAlert"
+          "NAlert",
+          "NConfigProvider",
+          "NMessageProvider",
         ],
-      },
+      }
     ],
   },
   build: {

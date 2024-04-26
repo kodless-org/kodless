@@ -9,8 +9,9 @@ useHead({
   ],
 });
 
-let { data: projectsAll, refresh: refreshProjects } =
-  await useFetch("/api/projects/");
+let { data: projectsAll, refresh: refreshProjects } = await useFetch(
+  "/api/projects/"
+);
 
 const projects = computed(() =>
   projectsAll.value?.filter((project) => project !== "template")
@@ -26,6 +27,8 @@ const createProject = async () => {
   projectName.value = "";
   refreshProjects();
 };
+
+const { data: conceptStore } = await useFetch("/api/store/");
 </script>
 
 <template>
@@ -56,6 +59,33 @@ const createProject = async () => {
       </li>
     </ul>
     <p v-if="projects.length === 0">No projects yet</p>
+  </div>
+
+  <div>
+    <h2>Concept Store</h2>
+    <n-collapse>
+      <n-collapse-item
+        :title="concept.name"
+        v-for="concept in conceptStore"
+        :key="concept.name"
+      >
+        <template #header-extra v-if="concept.meta.purpose">{{
+          concept.meta.purpose
+        }}</template>
+        <article>
+          Prompt:
+          <n-code :code="concept.meta.prompt || 'No prompt'" word-wrap />
+        </article>
+        <article>
+          Spec:
+          <n-code
+            language="typescript"
+            :code="concept.meta.spec || 'No spec'"
+            show-line-numbers
+          />
+        </article>
+      </n-collapse-item>
+    </n-collapse>
   </div>
 </template>
 

@@ -54,6 +54,11 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
         <template #arrow> ⚙️ </template>
         <ConceptCreator :project="projectName" @refresh="refreshProject" />
       </n-collapse-item>
+
+      <n-collapse-item title="Import a concept from the store">
+        <template #arrow> 📥 </template>
+        <ConceptImporter :project="projectName" @refresh="refreshProject" />
+      </n-collapse-item>
     </n-collapse>
 
     <ul class="list">
