@@ -257,9 +257,9 @@ export const createConcept = async (
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, conceptFileName);
 
-  //await instantiateConcept(project, conceptName);
+  await instantiateConcept(project, conceptName);
 
-  //await importInstantiatedConcept(project, conceptFileName, conceptName);
+  await importInstantiatedConcept(project, conceptFileName, conceptName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
