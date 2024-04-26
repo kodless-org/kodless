@@ -13,9 +13,8 @@ import {
   generateUpdatedConcept,
 } from "~/server/project/ai";
 
-
 import { WebSocketServer, WebSocket } from "ws";
-import { parseRouterFunctions, createOperation } from "./parse";
+import { parseRouterFunctions } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -258,9 +257,9 @@ export const createConcept = async (
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, conceptFileName);
 
-  await instantiateConcept(project, conceptName);
+  //await instantiateConcept(project, conceptName);
 
-  await importInstantiatedConcept(project, conceptFileName, conceptName);
+  //await importInstantiatedConcept(project, conceptFileName, conceptName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
@@ -532,6 +531,7 @@ export const getRoutes = async (project: string) => {
   }
 
   const content = await fs.promises.readFile(routesFile, "utf8");
+
   return parseRouterFunctions(content);
 };
 
@@ -574,7 +574,35 @@ const addRoute = async (project: string, routeSrc: string) => {
   return { message: `Route added to project ${project}` };
 };
 
-export const addOperation = async (project: string, operation: string) => {
+export const processRouteForTestingClient = (
+  name: string,
+  method: string,
+  endpoint: string,
+  params: string[]
+) => {
+  let fields = "{";
+  if (params.length > 0) {
+    params.forEach((param, index) => {
+      fields += `${param}: "input"`;
+      if (index !== params.length - 1) {
+        fields += ", ";
+      }
+    });
+  }
+  fields += "}";
+
+  const processedName = name.replace(/([A-Z])/g, " $1").trim();
+
+  return `
+  {
+    name: "${processedName.charAt(0).toUpperCase() + processedName.slice(1)}",
+    endpoint: "/api${endpoint}",
+    method: "${method.toUpperCase()}",
+    fields: ${fields}
+  }`;
+};
+
+export const generateRoutesForTestingClient = async (project: string) => {
   await validateProjectName(project);
 
   const operationsFile = `${projectsDir}/${project}/public/util.ts`;
@@ -586,26 +614,24 @@ export const addOperation = async (project: string, operation: string) => {
     });
   }
 
+  const routes = await getRoutes(project);
+  const processedRoutes = routes.map((route) => {
+    const { name, method, endpoint, params } = route;
+    return processRouteForTestingClient(name, method, endpoint, params);
+  });
+  const operationsCode = `const operations: operation[] = [${processedRoutes.join(
+    ",\n"
+  )}\n`;
+
   lock.acquire(project + "_op", async (): Promise<void> => {
     const content = await fs.promises.readFile(operationsFile, "utf8");
+    const startIndex = content.indexOf("const operations: operation[] = [");
+    const endIndex = content.indexOf("];", startIndex);
 
-    const match = content.match(
-      /const operations: operation\[\] = \[(\s|.)*?\];/
-    );
-    if (!match) {
-      console.error("Operations variable not found");
-      return;
-    }
-
-    const oldOperations = match[0];
-
-    const index = oldOperations.indexOf("];");
-    const newOperations = `${oldOperations.slice(
-      0,
-      index
-    )}${operation}\n${oldOperations.slice(index)}`;
-
-    const newContent = content.replace(oldOperations, newOperations);
+    const newContent =
+      content.substring(0, startIndex) +
+      operationsCode +
+      content.substring(endIndex);
 
     await fs.promises.writeFile(operationsFile, newContent);
   });
@@ -641,6 +667,8 @@ export const deleteRoute = async (project: string, route: string) => {
   //   cwd: `${projectsDir}/${project}`,
   // });
 
+  await generateRoutesForTestingClient(project);
+
   return { message: `Route deleted from project ${project}` };
 };
 
@@ -675,9 +703,7 @@ export const createRoute = async (
 
   await addRoute(project, code);
 
-  const operation = createOperation(code) ?? "";
-
-  await addOperation(project, operation);
+  await generateRoutesForTestingClient(project);
 
   return { message: `Route created for project ${project}` };
 };
