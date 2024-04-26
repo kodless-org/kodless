@@ -210,7 +210,7 @@ export const getConcept = async (project: string, concept: string) => {
   };
 };
 
-const conceptFileName = (concept: string) => {
+const convertToFileName = (concept: string) => {
   if (!concept.endsWith(".ts")) {
     concept += ".ts";
   }
@@ -231,35 +231,35 @@ export const createConcept = async (
 ) => {
   await validateProjectName(project);
 
-  const conceptFileTitle = conceptFileName(concept);
+  const conceptFileName = convertToFileName(concept);
   const conceptName = conceptTitleCase(concept);
 
   // make sure the concept file does not exist
-  const conceptFile = `${projectsDir}/${project}/server/concepts/${conceptFileTitle}`;
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${conceptFileName}`;
   if (noOverride && fs.existsSync(conceptFile)) {
     throw createError({
       status: 400,
-      message: `Concept ${conceptFileTitle} already exists for project ${project}`,
+      message: `Concept ${conceptFileName} already exists for project ${project}`,
     });
   }
 
-  const response = await generateConcept(conceptFileTitle, prompt);
+  const response = await generateConcept(conceptFileName, prompt);
 
   // Create the concept file
   await fs.promises.writeFile(conceptFile, response);
 
   await lock.acquire(project, async (): Promise<void> => {
     const config = await getProjectConfig(project);
-    config.concepts[conceptFileTitle] = { prompt, spec: "" };
+    config.concepts[conceptFileName] = { prompt, spec: "" };
     await updateProjectConfig(project, config);
   });
 
   // Update the concept spec, happens in the "background"
-  await updateConceptSpec(project, conceptFileTitle);
+  await updateConceptSpec(project, conceptFileName);
 
   await instantiateConcept(project, conceptName);
 
-  await importInstantiatedConcept(project, conceptFileTitle, conceptName);
+  await importInstantiatedConcept(project, conceptFileName, conceptName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
@@ -331,7 +331,7 @@ export const deleteConcept = async (project: string, concept: string) => {
   });
 
   return { message: `Concept ${concept} deleted for project ${project}` };
-}
+};
 
 export const getProjectSpec = async (project: string) => {
   const config = await getProjectConfig(project);
@@ -421,7 +421,7 @@ export const instantiateConcept = async (
 
 export const importInstantiatedConcept = async (
   project: string,
-  conceptFileTitle: string,
+  conceptFileName: string,
   conceptName: string
 ) => {
   await validateProjectName(project);
