@@ -409,7 +409,7 @@ export const instantiateConcept = async (
     });
   }
 
-  lock.acquire(project + "_concept", async (): Promise<void> => {
+  lock.acquire(project, async (): Promise<void> => {
     const content = await fs.promises.readFile(appFile, "utf8");
 
     const conceptImportExport = `import ${conceptName}Concept from "./concepts/${conceptName.toLowerCase()}";\nexport const ${conceptName} = new ${conceptName}Concept("${conceptName.toLowerCase()}s");`;
@@ -435,7 +435,7 @@ export const importInstantiatedConcept = async (
     });
   }
 
-  lock.acquire(project + "_op", async (): Promise<void> => {
+  lock.acquire(project, async (): Promise<void> => {
     const content = await fs.promises.readFile(routesFile, "utf8");
 
     const index = content.indexOf(' } from "./app"');
@@ -530,7 +530,11 @@ export const getRoutes = async (project: string) => {
     });
   }
 
-  const content = await fs.promises.readFile(routesFile, "utf8");
+  let content = "";
+
+  await lock.acquire(project + "_routes", async (): Promise<void> => {
+    content = await fs.promises.readFile(routesFile, "utf8");
+  });
 
   return parseRouterFunctions(content);
 };
@@ -547,7 +551,7 @@ const addRoute = async (project: string, routeSrc: string) => {
       message: `Routes file not found for project ${project}`,
     });
   }
-  lock.acquire(project + "_route", async (): Promise<void> => {
+  await lock.acquire(project + "_routes", async (): Promise<void> => {
     const content = await fs.promises.readFile(routesFile, "utf8");
 
     // Find the last router function and add the new route after it
@@ -561,7 +565,9 @@ const addRoute = async (project: string, routeSrc: string) => {
     await fs.promises.writeFile(routesFile, newContent);
   });
 
-  const t = setTimeout(() => {
+  await generateRoutesForTestingClient(project);
+
+  /*const t = setTimeout(() => {
     for (const call of formatCalls) {
       clearTimeout(call);
     }
@@ -569,7 +575,7 @@ const addRoute = async (project: string, routeSrc: string) => {
       cwd: `${projectsDir}/${project}`,
     });
   }, 1000);
-  formatCalls.add(t);
+  formatCalls.add(t);*/
 
   return { message: `Route added to project ${project}` };
 };
@@ -603,8 +609,6 @@ export const processRouteForTestingClient = (
 };
 
 export const generateRoutesForTestingClient = async (project: string) => {
-  await validateProjectName(project);
-
   const operationsFile = `${projectsDir}/${project}/public/util.ts`;
 
   if (!fs.existsSync(operationsFile)) {
@@ -615,15 +619,17 @@ export const generateRoutesForTestingClient = async (project: string) => {
   }
 
   const routes = await getRoutes(project);
+
   const processedRoutes = routes.map((route) => {
     const { name, method, endpoint, params } = route;
     return processRouteForTestingClient(name, method, endpoint, params);
   });
+
   const operationsCode = `const operations: operation[] = [${processedRoutes.join(
     ",\n"
   )}\n`;
 
-  lock.acquire(project + "_op", async (): Promise<void> => {
+  await lock.acquire(project + "_op", async (): Promise<void> => {
     const content = await fs.promises.readFile(operationsFile, "utf8");
     const startIndex = content.indexOf("const operations: operation[] = [");
     const endIndex = content.indexOf("];", startIndex);
@@ -702,8 +708,6 @@ export const createRoute = async (
   }
 
   await addRoute(project, code);
-
-  await generateRoutesForTestingClient(project);
 
   return { message: `Route created for project ${project}` };
 };
