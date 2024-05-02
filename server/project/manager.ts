@@ -257,10 +257,6 @@ export const createConcept = async (
   // Update the concept spec, happens in the "background"
   await updateConceptSpec(project, conceptFileName);
 
-  await instantiateConcept(project, conceptName);
-
-  await importInstantiatedConcept(project, conceptFileName, conceptName);
-
   return { message: `Concept ${concept} created for project ${project}` };
 };
 
@@ -392,60 +388,6 @@ export const getProjectEnvironment = async (project: string) => {
   }
 
   return env;
-};
-
-export const instantiateConcept = async (
-  project: string,
-  conceptName: string
-) => {
-  await validateProjectName(project);
-
-  const appFile = `${projectsDir}/${project}/server/app.ts`;
-
-  if (!fs.existsSync(appFile)) {
-    throw createError({
-      status: 404,
-      message: `App file not found for project ${project}`,
-    });
-  }
-
-  lock.acquire(project, async (): Promise<void> => {
-    const content = await fs.promises.readFile(appFile, "utf8");
-
-    const conceptImportExport = `import ${conceptName}Concept from "./concepts/${conceptName.toLowerCase()}";\nexport const ${conceptName} = new ${conceptName}Concept("${conceptName.toLowerCase()}s");`;
-    const newContent = content + "\n" + conceptImportExport;
-
-    await fs.promises.writeFile(appFile, newContent);
-  });
-};
-
-export const importInstantiatedConcept = async (
-  project: string,
-  conceptFileName: string,
-  conceptName: string
-) => {
-  await validateProjectName(project);
-
-  const routesFile = `${projectsDir}/${project}/server/routes.ts`;
-
-  if (!fs.existsSync(routesFile)) {
-    throw createError({
-      status: 404,
-      message: `Routes file not found for project ${project}`,
-    });
-  }
-
-  lock.acquire(project, async (): Promise<void> => {
-    const content = await fs.promises.readFile(routesFile, "utf8");
-
-    const index = content.indexOf(' } from "./app"');
-    const newContent = `${content.slice(
-      0,
-      index
-    )}, ${conceptName}${content.slice(index)}`;
-
-    await fs.promises.writeFile(routesFile, newContent);
-  });
 };
 
 export const updateProjectEnvironment = async (
