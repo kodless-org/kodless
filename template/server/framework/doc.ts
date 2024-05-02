@@ -25,6 +25,19 @@ export interface BaseDoc {
   dateUpdated: Date;
 }
 
+export type UpdateOperators<T> = Partial<T> & {
+  $set?: Partial<T>;
+  $inc?: Partial<{ [K in keyof T]?: number }>;
+  $unset?: Partial<{ [K in keyof T]?: "" | 1 }>;
+  $push?: Partial<{ [K in keyof T]?: any }>;
+  $pull?: Partial<{ [K in keyof T]?: any }>;
+  $addToSet?: Partial<{ [K in keyof T]?: any }>;
+  $rename?: Partial<{ [K in keyof T]?: string }>;
+  $min?: Partial<{ [K in keyof T]?: number }>;
+  $max?: Partial<{ [K in keyof T]?: number }>;
+  $mul?: Partial<{ [K in keyof T]?: number }>;
+};
+
 export type WithoutBase<T extends BaseDoc> = Omit<T, keyof BaseDoc>;
 
 export default class DocCollection<Schema extends BaseDoc> {
@@ -108,11 +121,12 @@ export default class DocCollection<Schema extends BaseDoc> {
   /**
    * Update the document that matches `filter` based on existing fields in `update`.
    */
-  async updateOne(filter: Filter<Schema>, update: Partial<Schema>, options?: FindOneAndUpdateOptions): Promise<UpdateResult<Schema>> {
+  async updateOne(filter: Filter<Schema>, update: UpdateOperators<Schema>, options?: FindOneAndUpdateOptions): Promise<UpdateResult<Schema>> {
     this.sanitizeItem(update);
     this.sanitizeFilter(filter);
-    update.dateUpdated = new Date();
-    return await this.collection.updateOne(filter, { $set: update }, options);
+    update.$set = update.$set || {}; 
+    update.$set.dateUpdated = new Date(); 
+    return await this.collection.updateOne(filter, update, options);
   }
 
   /**
