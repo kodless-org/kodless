@@ -1,0 +1,91 @@
+I have created a DSL to generate a frontend UI.
+
+Each <k-action /> tag specifies an API endpoint. 
+
+The following instructions will use these <k-action/> tags as examples.
+<k-action name="getPosts" method="GET" path="/api/posts" returns="[{_id, title, content, userId, dateCreated, dateUpdated}]" refresh-on="createPost, deletePost" />
+<k-action name="createPost" method="POST" path="/api/posts" params="title, content" />
+<k-action name="deletePost" method="DELETE" path="/api/posts/:id" />
+<k-action name="getComments" method="GET" path="/api/posts/:id/comments" returns="[{comment}]" />
+
+There are two main ways to interact with an API endpoint specified by a <k-action/> tag.
+Passive/background fetch. You must check if the background is loading or available. Example of interacting with getPost: items="getPosts.loading ? [] : getPosts.data.reverse()". 
+Active/user-initiated interaction. Example of interacting with createPost: 
+<form action="createPost">
+    <input type="textarea" name="title" placeholder="Enter your post title" required>
+    <input type="textarea" name="content" placeholder="Enter your post content" required>
+    <button type="submit">Create Post</button>
+            </form>
+
+If multiple objects are returned by an API endpoint, you can iteratively display them using the <k-foreach> tag. 
+<k-param name=”posts" value="getPosts.loading ? [] : getPosts.data.reverse()" />
+<k-foreach items="posts" item="post">
+    <p>{{post.title}}</p>. 
+    <p>{{post.content}}</p>. 
+<k-foreach/>
+
+<k-param /> tags define variables with a name and value. If there is a placeholder such as :id in the path specified in a <k-action/> tag, as in deletePost, you must use a <k-param/> tag on a separate line to specify the value of the placeholder. Example:
+<form action="deletePost">
+    <k-param name="id" value="post._id" />
+    <button type="submit”>Delete Post</button>
+</form>
+
+Another example of specifying the value of a placeholder:
+<k-param name="id" value="post._id" />
+<k-param name=”comments" value="getComments.loading ? [] : getComments.data.reverse()"/>
+<k-foreach items="comments" item=”comment">
+    <p>{{comment.comment}}</p>  
+<k-foreach/>
+
+To display a view at a given path, you should use <k-page /> tags. define a view at a given path. A <k-page/> tag looks like this: <k-page path="/profile" name="Profile" title=”Profile" k-if="user">.
+
+k-if and k-else attributes are added to tags to define conditional formatting. For example, in the below code, different main elements are shown depending on whether the user variable exists.
+    <main k-if="user">
+      <h1>Welcome, {{ user.username }}</h1>
+           <form action="logout">
+        <button type="submit">Logout</button>
+      </form>
+    </main>
+
+    <main k-else>
+      <h1>Welcome, guest!</h1>
+           <form action="login">
+        <input type="text" name="username" placeholder="Enter your username" required />
+        <button type="submit">Login</button>
+      </form>
+    </main>
+
+Please generate code in the DSL to display the frontend according to the <k-action/> tags and description I provide. You may use the following standard HTML elements: header, footer, nav, main, h1, article, div, button, and textarea. 
+
+The code must begin with setting the user variable and defining a <header> element that contains a link to each page. For instance:
+<k-param name="user" value="getUser.error ? null : getUser.data" />
+
+<header>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/profile" k-if="user">Profile {{user.username}}</a>
+    </nav>
+  </header>
+
+The code must then conditionally display the login and logout buttons on the home page based on whether the user is logged in.
+
+<k-page path="/" name="Home">
+    <main k-if="user">
+      <h1>Welcome, {{ user.username }}</h1>
+      <form action="logout">
+        <button type="submit">Logout</button>
+      </form>
+    </main>
+
+    <main k-else>
+      <h1>Welcome, guest!</h1>
+      <form action="login">
+        <input type="text" name="username" placeholder="Enter your username" required />
+        <button type="submit">Login</button>
+      </form>
+    </main>
+  </k-page>
+
+Then you should display each view with a <k-page /> tag.
+
+I am going to provide you with the frontend UI description and <k-action /> tags I want you to use. Please generate code in the DSL to display the frontend accordingly. Do not output any other text besides the code.

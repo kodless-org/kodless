@@ -11,6 +11,7 @@ import {
   generateConceptSpec,
   generateRoute,
   generateUpdatedConcept,
+  generateFrontend,
 } from "~/server/project/ai";
 
 import { WebSocketServer, WebSocket } from "ws";
@@ -713,4 +714,12 @@ export const updateAppDefinition = async (project: string, prompt: string) => {
   await updateRouteImports(project);
 
   return { message: `App definition updated for project ${project}` };
+};
+
+export const createFrontend = async (project: string, prompt: string) => {
+  await validateProjectName(project);
+
+  const response = await generateFrontend(prompt);
+
+  return { message: `Frontend generated for project ${project}` };
 };
