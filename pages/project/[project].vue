@@ -24,7 +24,9 @@ const concepts = computed(() => {
     .map((file: string) => file.split("/")[2]);
 });
 
-const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${projectName}/routes/`);
+const { data: routes, refresh: refreshRoutes } = useFetch(
+  `/api/projects/${projectName}/routes/`
+);
 </script>
 
 <template>
@@ -66,7 +68,11 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
         <n-collapse>
           <n-collapse-item :title="concept">
             <template #arrow> 💡 </template>
-            <ConceptEditor :project="projectName" :concept="concept" @refresh="refreshProject" />
+            <ConceptEditor
+              :project="projectName"
+              :concept="concept"
+              @refresh="refreshProject"
+            />
           </n-collapse-item>
         </n-collapse>
       </li>
@@ -91,11 +97,31 @@ const { data: routes, refresh: refreshRoutes } = useFetch(`/api/projects/${proje
       <li v-for="route in routes" :key="route.name">
         <n-collapse>
           <n-collapse-item :title="`${route.name} (${route.description})`">
-            <RouteEditor :project="projectName" :route="route" @refresh="refreshRoutes" />
+            <RouteEditor
+              :project="projectName"
+              :route="route"
+              @refresh="refreshRoutes"
+            />
           </n-collapse-item>
         </n-collapse>
       </li>
     </ul>
+
+    <h2>Action Tags</h2>
+    <n-collapse>
+      <n-collapse-item title="Generate action tags">
+        <template #arrow> ⚙️ </template>
+        <ActionTagsGenerator :project="projectName" />
+      </n-collapse-item>
+    </n-collapse>
+
+    <h2>Frontend</h2>
+    <n-collapse>
+      <n-collapse-item title="Generate frontend">
+        <template #arrow> ⚙️ </template>
+        <FrontendCreator :project="projectName" />
+      </n-collapse-item>
+    </n-collapse>
   </n-flex>
 </template>
 

@@ -11,11 +11,11 @@ import {
   generateConceptSpec,
   generateRoute,
   generateUpdatedConcept,
+  generateFrontend,
 } from "~/server/project/ai";
 
-
 import { WebSocketServer, WebSocket } from "ws";
-import { parseRouterFunctions } from "./parse";
+import { parseRouterFunctions, RouteRep } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -211,6 +211,19 @@ export const getConcept = async (project: string, concept: string) => {
   };
 };
 
+const convertToFileName = (concept: string) => {
+  if (!concept.endsWith(".ts")) {
+    concept += ".ts";
+  }
+  return concept.toLowerCase().replace(/\s/g, "");
+};
+
+const conceptTitleCase = (concept: string) => {
+  return concept
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+    .replace(/\s/g, "");
+};
+
 export const createConcept = async (
   project: string,
   concept: string,
@@ -219,34 +232,31 @@ export const createConcept = async (
 ) => {
   await validateProjectName(project);
 
-  concept = concept.toLowerCase();
-
-  if (!concept.endsWith(".ts")) {
-    concept += ".ts";
-  }
+  const conceptFileName = convertToFileName(concept);
+  const conceptName = conceptTitleCase(concept);
 
   // make sure the concept file does not exist
-  const conceptFile = `${projectsDir}/${project}/server/concepts/${concept.toLowerCase()}`;
+  const conceptFile = `${projectsDir}/${project}/server/concepts/${conceptFileName}`;
   if (noOverride && fs.existsSync(conceptFile)) {
     throw createError({
       status: 400,
-      message: `Concept ${concept} already exists for project ${project}`,
+      message: `Concept ${conceptFileName} already exists for project ${project}`,
     });
   }
 
-  const response = await generateConcept(concept, prompt);
+  const response = await generateConcept(conceptFileName, prompt);
 
   // Create the concept file
   await fs.promises.writeFile(conceptFile, response);
 
   await lock.acquire(project, async (): Promise<void> => {
     const config = await getProjectConfig(project);
-    config.concepts[concept] = { prompt, spec: "" };
+    config.concepts[conceptFileName] = { prompt, spec: "" };
     await updateProjectConfig(project, config);
   });
 
   // Update the concept spec, happens in the "background"
-  await updateConceptSpec(project, concept);
+  await updateConceptSpec(project, conceptFileName);
 
   return { message: `Concept ${concept} created for project ${project}` };
 };
@@ -318,7 +328,7 @@ export const deleteConcept = async (project: string, concept: string) => {
   });
 
   return { message: `Concept ${concept} deleted for project ${project}` };
-}
+};
 
 export const getProjectSpec = async (project: string) => {
   const config = await getProjectConfig(project);
@@ -463,7 +473,12 @@ export const getRoutes = async (project: string) => {
     });
   }
 
-  const content = await fs.promises.readFile(routesFile, "utf8");
+  let content = "";
+
+  await lock.acquire(project + "_routes", async (): Promise<void> => {
+    content = await fs.promises.readFile(routesFile, "utf8");
+  });
+
   return parseRouterFunctions(content);
 };
 
@@ -479,7 +494,7 @@ const addRoute = async (project: string, routeSrc: string) => {
       message: `Routes file not found for project ${project}`,
     });
   }
-  lock.acquire(project + "_route", async (): Promise<void> => {
+  await lock.acquire(project + "_routes", async (): Promise<void> => {
     const content = await fs.promises.readFile(routesFile, "utf8");
 
     // Find the last router function and add the new route after it
@@ -493,7 +508,9 @@ const addRoute = async (project: string, routeSrc: string) => {
     await fs.promises.writeFile(routesFile, newContent);
   });
 
-  const t = setTimeout(() => {
+  await generateRoutesForTestingClient(project);
+
+  /*const t = setTimeout(() => {
     for (const call of formatCalls) {
       clearTimeout(call);
     }
@@ -501,9 +518,72 @@ const addRoute = async (project: string, routeSrc: string) => {
       cwd: `${projectsDir}/${project}`,
     });
   }, 1000);
-  formatCalls.add(t);
+  formatCalls.add(t);*/
 
   return { message: `Route added to project ${project}` };
+};
+
+export const processRouteForTestingClient = (
+  name: string,
+  method: string,
+  endpoint: string,
+  params: string[]
+) => {
+  let fields = "{";
+  if (params.length > 0) {
+    params.forEach((param, index) => {
+      fields += `${param}: "input"`;
+      if (index !== params.length - 1) {
+        fields += ", ";
+      }
+    });
+  }
+  fields += "}";
+
+  const processedName = name.replace(/([A-Z])/g, " $1").trim();
+
+  return `
+  {
+    name: "${processedName.charAt(0).toUpperCase() + processedName.slice(1)}",
+    endpoint: "/api${endpoint}",
+    method: "${method.toUpperCase()}",
+    fields: ${fields}
+  }`;
+};
+
+export const generateRoutesForTestingClient = async (project: string) => {
+  const operationsFile = `${projectsDir}/${project}/public/util.ts`;
+
+  if (!fs.existsSync(operationsFile)) {
+    throw createError({
+      status: 404,
+      message: `Operations file not found for project ${project}`,
+    });
+  }
+
+  const routes = await getRoutes(project);
+
+  const processedRoutes = routes.map((route) => {
+    const { name, method, endpoint, params } = route;
+    return processRouteForTestingClient(name, method, endpoint, params);
+  });
+
+  const operationsCode = `const operations: operation[] = [${processedRoutes.join(
+    ",\n"
+  )}\n`;
+
+  await lock.acquire(project + "_op", async (): Promise<void> => {
+    const content = await fs.promises.readFile(operationsFile, "utf8");
+    const startIndex = content.indexOf("const operations: operation[] = [");
+    const endIndex = content.indexOf("];", startIndex);
+
+    const newContent =
+      content.substring(0, startIndex) +
+      operationsCode +
+      content.substring(endIndex);
+
+    await fs.promises.writeFile(operationsFile, newContent);
+  });
 };
 
 export const deleteRoute = async (project: string, route: string) => {
@@ -535,6 +615,8 @@ export const deleteRoute = async (project: string, route: string) => {
   // execSync("npm run format", {
   //   cwd: `${projectsDir}/${project}`,
   // });
+
+  await generateRoutesForTestingClient(project);
 
   return { message: `Route deleted from project ${project}` };
 };
@@ -632,4 +714,55 @@ export const updateAppDefinition = async (project: string, prompt: string) => {
   await updateRouteImports(project);
 
   return { message: `App definition updated for project ${project}` };
+};
+
+export const createFrontend = async (project: string, prompt: string) => {
+  await validateProjectName(project);
+
+  const frontendFile = `${projectsDir}/${project}/public/frontend.hrml`;
+  if (!fs.existsSync(frontendFile)) {
+    throw createError({
+      status: 404,
+      message: `Frontend file not found for project ${project}`,
+    });
+  }
+
+  const response = await generateFrontend(prompt);
+
+  await fs.promises.writeFile(frontendFile, response);
+
+  return { message: `Frontend generated for project ${project}` };
+};
+
+export const getFrontend = async (project: string) => {
+  await validateProjectName(project);
+
+  const frontendFile = `${projectsDir}/${project}/public/frontend.hrml`;
+  if (!fs.existsSync(frontendFile)) {
+    throw createError({
+      status: 404,
+      message: `Frontend file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(frontendFile, "utf8");
+  return content;
+};
+
+export const generateActionTags = async (project: string) => {
+  await validateProjectName(project);
+
+  const routes = await getRoutes(project);
+
+  return routes
+    .map((route) => {
+      const paramsString =
+        route.params.length > 0 ? `params="${route.params.join(", ")}" ` : "";
+      return `<k-action name="${
+        route.name
+      }" method="${route.method.toUpperCase()}" path="/api${
+        route.endpoint
+      }" ${paramsString}/>`;
+    })
+    .join("\n");
 };

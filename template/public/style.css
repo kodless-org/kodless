@@ -1,0 +1,61 @@
+html {
+  height: 100vh;
+}
+
+body {
+  margin: 0 1em;
+  padding: 0;
+  font-family: sans-serif;
+  max-height: 100vh;
+  background-color: #f1f3f5;
+}
+
+h1, h2 {
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  margin-top: 0.5em;
+  text-align: center;
+}
+
+main {
+  display: flex;
+  gap: 1em;
+}
+
+#operations, #response {
+  width: 45%;
+  height: 70vh;
+  padding: 1em;
+}
+
+#operations-list, #response-text {
+  height: 80vh;
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #ccc;
+  padding: 1em;
+}
+
+#operations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.operation {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 1em;
+  list-style: none;
+}
+
+.field {
+  margin-bottom: 4px;
+}
+
+#response-text {
+  font-family: 'Courier New', Courier, monospace;
+}

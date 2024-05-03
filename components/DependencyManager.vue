@@ -8,13 +8,13 @@ const { dependenciesExist, projectName } = defineProps<{
 
 const emit = defineEmits(["installed"]);
 
-const {
-  refresh: install,
-  status: installStatus,
-} = await useFetch(`/api/projects/${projectName}/install/`, {
-  method: "POST",
-  immediate: false,
-});
+const { refresh: install, status: installStatus } = await useFetch(
+  `/api/projects/${projectName}/install/`,
+  {
+    method: "POST",
+    immediate: false,
+  }
+);
 
 const loadingInstall = computed(() => installStatus.value === "pending");
 
