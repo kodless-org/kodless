@@ -1,4 +1,4 @@
-type RouteRep = {
+export type RouteRep = {
   name: string;
   method: string;
   endpoint: string;

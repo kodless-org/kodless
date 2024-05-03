@@ -67,7 +67,7 @@ The code must begin with setting the user variable and defining a <header> eleme
     </nav>
   </header>
 
-The code must then conditionally display the login and logout buttons on the home page based on whether the user is logged in.
+The code must conditionally display the login and logout buttons on the home page based on whether the user is logged in.
 
 <k-page path="/" name="Home">
     <main k-if="user">
@@ -86,6 +86,6 @@ The code must then conditionally display the login and logout buttons on the hom
     </main>
   </k-page>
 
-Then you should display each view with a <k-page /> tag.
+Then you should display a view for each page with a <k-page /> tag.
 
 I am going to provide you with the frontend UI description and <k-action /> tags I want you to use. Please generate code in the DSL to display the frontend accordingly. Do not output any other text besides the code.

@@ -3,38 +3,43 @@ const { project } = defineProps<{
   project: string;
 }>();
 
-const emit = defineEmits(["refresh"]);
+const { data: frontend, refresh: refreshFrontend } = useFetch(
+  `/api/projects/${project}/frontend/`
+);
 
-const newFrontend = reactive({
-  prompt: "",
-});
-
+const prompt = ref("");
 const loading = ref(false);
-const createFrontend = async (prompt: string) => {
+const createFrontend = async () => {
+  loading.value = true;
   await fetchy(`/api/projects/${project}/frontend/`, {
     method: "POST",
-    body: {
-      prompt: prompt,
-    },
+    body: { prompt: prompt.value },
   });
-  emit("refresh");
-};
-
-const handleCreateFrontend = async () => {
-  loading.value = true;
-  await createFrontend(newFrontend.prompt);
   loading.value = false;
-  newFrontend.prompt = "";
+  prompt.value = "";
+  await refreshFrontend();
 };
 </script>
 
 <template>
-  <n-form>
-    <n-form-item label="Description">
-      <n-input v-model:value="newFrontend.prompt" type="textarea" />
-    </n-form-item>
-    <n-button @click="handleCreateFrontend" :loading="loading" type="primary"
-      >Create</n-button
-    >
-  </n-form>
+  <n-flex vertical :size="16">
+    <n-form>
+      <n-form-item label="Description">
+        <n-input v-model:value="prompt" type="textarea" />
+      </n-form-item>
+      <n-button @click="createFrontend" :loading="loading" type="primary"
+        >Create</n-button
+      >
+    </n-form>
+    <div class="code" v-if="frontend">
+      <n-code :code="frontend" language="typescript" show-line-numbers />
+    </div>
+  </n-flex>
 </template>
+
+<style scoped>
+div.code {
+  min-width: fit-content;
+  background-color: #f1f3f5;
+}
+</style>

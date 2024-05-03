@@ -107,11 +107,19 @@ const { data: routes, refresh: refreshRoutes } = useFetch(
       </li>
     </ul>
 
+    <h2>Action Tags</h2>
+    <n-collapse>
+      <n-collapse-item title="Generate action tags">
+        <template #arrow> ⚙️ </template>
+        <ActionTagsGenerator :project="projectName" />
+      </n-collapse-item>
+    </n-collapse>
+
     <h2>Frontend</h2>
     <n-collapse>
       <n-collapse-item title="Generate frontend">
         <template #arrow> ⚙️ </template>
-        <FrontendCreator :project="projectName" @refresh="refreshProject" />
+        <FrontendCreator :project="projectName" />
       </n-collapse-item>
     </n-collapse>
   </n-flex>

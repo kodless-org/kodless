@@ -119,6 +119,5 @@ export const generateUpdatedRoute = async (
 
 export const generateFrontend = async (prompt: string) => {
   let code = await getResponse("frontend_genie", prompt);
-  console.log(cleanCode(code));
   return cleanCode(code);
 };

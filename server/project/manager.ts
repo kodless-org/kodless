@@ -15,7 +15,7 @@ import {
 } from "~/server/project/ai";
 
 import { WebSocketServer, WebSocket } from "ws";
-import { parseRouterFunctions } from "./parse";
+import { parseRouterFunctions, RouteRep } from "./parse";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -719,7 +719,50 @@ export const updateAppDefinition = async (project: string, prompt: string) => {
 export const createFrontend = async (project: string, prompt: string) => {
   await validateProjectName(project);
 
+  const frontendFile = `${projectsDir}/${project}/public/frontend.hrml`;
+  if (!fs.existsSync(frontendFile)) {
+    throw createError({
+      status: 404,
+      message: `Frontend file not found for project ${project}`,
+    });
+  }
+
   const response = await generateFrontend(prompt);
 
+  await fs.promises.writeFile(frontendFile, response);
+
   return { message: `Frontend generated for project ${project}` };
+};
+
+export const getFrontend = async (project: string) => {
+  await validateProjectName(project);
+
+  const frontendFile = `${projectsDir}/${project}/public/frontend.hrml`;
+  if (!fs.existsSync(frontendFile)) {
+    throw createError({
+      status: 404,
+      message: `Frontend file not found for project ${project}`,
+    });
+  }
+
+  const content = await fs.promises.readFile(frontendFile, "utf8");
+  return content;
+};
+
+export const generateActionTags = async (project: string) => {
+  await validateProjectName(project);
+
+  const routes = await getRoutes(project);
+
+  return routes
+    .map((route) => {
+      const paramsString =
+        route.params.length > 0 ? `params="${route.params.join(", ")}" ` : "";
+      return `<k-action name="${
+        route.name
+      }" method="${route.method.toUpperCase()}" path="/api${
+        route.endpoint
+      }" ${paramsString}/>`;
+    })
+    .join("\n");
 };
