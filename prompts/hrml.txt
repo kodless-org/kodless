@@ -1,0 +1,371 @@
+HRML is a language I created that's based on HTML. There's a <head> tag that's exactly same with HTML.
+Following, there's k-actions tag in which there are k-action elements. Each k-action tag represents a web request and supports query/body parameters via params attribute. It also supports refresh-on attribute that has names of other k-action elements that causes data refetching.
+Following, there's a body tag. Inside body tag, pages are defined using k-page elements. k-page elements support dynamic routing and client query parameters, for example: <k-page path="/?list=sort&page=1&date=&id=" name="Home">. When query parameter has a set value it means that's default otherwise it's unset. In the body tag, code written above or below all k-page elements will be shown on all pages. These could include navbar and footer. In addition, there are k-param elements, which will define a variable that will be available to the siblings and children of siblings of the element. Any javascript value can go into k-param and it will be evaluated in the context. To loop, there's k-foreach element that has attributes items and item where items is a list and item will be available inside this element. All elements support k-if conditional rendering, and k-else. You can also bind forms to actions that will cause the corresponding k-action web request to be made. Each input on the form will be added to the payload with its name attribute. Each k-action will be exposed as a variable by its name and it will have data, error and loading properties. When data is accessed, that web request is immediately made. To make some web requests, query or body parameters need to be set, and they can be set using k-param in that context. Elements has k-style attribute which supports dynamic styling with double braces syntax. href in anchor tags also support that. On most elements, k-click can be added which will trigger action to be called.
+Here's an example HRML code:
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="/src/assets/y18.svg" type="image/x-icon">
+  <link rel="stylesheet" href="/src/assets/hn.css">
+  <title>Hacked News</title>
+</head>
+
+<k-actions base-url="http://localhost:5000">
+  <k-action name="getSession" path="/api/session" refresh-on="login, logout, register, changeTopBar" />
+  <k-action name="login" path="/api/login" method="POST" params="username, password" />
+  <k-action name="register" path="/api/register" method="POST" params="username, password" />
+  <k-action name="logout" path="/api/logout" method="POST" />
+
+  <k-action name="getUser" path="/api/users" params="username" />
+
+  <k-action name="submit" path="/api/posts" method="POST" params="title, url, text" />
+
+  <k-action name="getPosts" path="/api/posts" params="page, prefix, date" refresh-on="votePost, hidePost" />
+  <k-action name="getRecentPosts" path="/api/posts/recent" params="page, prefix" refresh-on="hidePost" />
+  <k-action name="getFavorites" path="/api/favorites" params="username" refresh-on="unfavoritePost" />
+  <k-action name="getHidden" path="/api/hidden" refresh-on="unhidePost" />
+
+  <k-action name="getPost" path="/api/posts/:id"
+    refresh-on="votePost, favoritePost, unfavoritePost, hidePost, unhidePost" />
+
+  <k-action name="votePost" path="/api/posts/:id/vote" method="POST" params="voteType" />
+  <k-action name="favoritePost" path="/api/posts/:id/favorite" method="POST" />
+  <k-action name="unfavoritePost" path="/api/posts/:id/favorite" method="DELETE" />
+  <k-action name="hidePost" path="/api/posts/:id/hide" method="POST" />
+  <k-action name="unhidePost" path="/api/posts/:id/hide" method="DELETE" />
+
+  <k-action name="getComment" path="/api/comments/:id" />
+  <k-action name="voteComment" path="/api/comments/:id/vote" method="POST" params="voteType" />
+  <k-action name="getComments" path="/api/comments" params="parent" refresh-on="makeComment, voteComment" />
+  <k-action name="makeComment" path="/api/comments" method="POST" params="content, parent" />
+</k-actions>
+
+<body>
+
+  <k-param name="user" value="getSession.error ? null : getSession.data" />
+
+  <header k-style="background-color: {{user.topBarColor}}">
+    <k-param name="yesterday" value="new Date().toISOString().split('T')[0]" />
+
+    <nav>
+      <a href="/" class="vcenter"> <img src="/src/assets/y18.svg" alt="YC Logo"><b class="hn-name">Hacked News</b>
+      </a>
+      <span class="nav-left">
+        <a href="/?list=new">new</a>
+        |
+        <a href="/threads" k-if="user">threads</a>
+        <span k-if="user">|</span>
+        <a href="/?list=past&date={{yesterday}}">past</a>
+        |
+        <a href="/newcomments">comments</a>
+        |
+        <a href="/?list=ask">ask</a>
+        |
+        <a href="/?list=show">show</a>
+        |
+        <a href="/?list=jobs">jobs</a>
+        |
+        <a href="/submit">submit</a>
+      </span>
+      <span class="nav-right">
+        <span k-if="user" class="w-end">
+          <a href="/user?id={{user.username}}">{{user.username}}</a>
+          ({{user.karma}}) |
+        </span>
+        <a href="/login" k-if="!user">login</a>
+        <a k-click="logout" k-else>logout</a>
+      </span>
+    </nav>
+  </header>
+
+  <k-page path="/login" name="Login">
+    <form action="login" redirect="/">
+      <h2>Login</h2>
+      <table>
+        <tbody>
+          <tr>
+            <td>username:</td>
+            <td><input type="text" name="username" autocomplete="off"></td>
+          </tr>
+          <tr>
+            <td>password:</td>
+            <td><input type="password" name="password"></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><button type="submit">login</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <a href="/forgot" style="text-decoration: underline;">Forgot your password?</a>
+    </form>
+    <form action="register" redirect="/">
+      <h2>Create Account</h2>
+      <table>
+        <tbody>
+          <tr>
+            <td>username:</td>
+            <td><input type="text" name="username" autocomplete="off"></td>
+          </tr>
+          <tr>
+            <td>password:</td>
+            <td><input type="password" name="password"></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><button type="submit">create account</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </k-page>
+
+  <k-page path="/?list=sort&page=1&date=&id=" name="Home">
+    <k-param k-if="list === 'ask' || list === 'show' || list === 'jobs'" name="prefix" value="list" />
+    <k-param k-if="list === 'favorites'" name="username" value="id" />
+    <k-param name="posts"
+      value="list.includes('new') ? (getRecentPosts.data ?? []) : list === 'favorites' ? (getFavorites.data ?? []) : list === 'hidden' ? (getHidden.data ?? []) : (getPosts.data ?? [])" />
+
+    <p k-if="list === 'past'">
+      <a href="/?list=past&date={{moment(date).subtract(1, 'day').format('YYYY-MM-DD')}}">previous day</a>
+      |
+      <a href="/?list=past&date={{moment(date).add(1, 'day').format('YYYY-MM-DD')}}">next day</a>
+      |
+      <span>{{date}}</span>
+    </p>
+
+    <k-foreach items="posts" item="post">
+      <article>
+        <div class="post">
+          <span style="margin-left: 1ch;">{{ post.index }}.</span>
+          <k-param name="voteType" value="up" />
+          <k-param name="id" value="post._id" />
+          <span class="voted" k-if="post.author.username === user?.username">*</span>
+          <img class="vote-arrow" src="/triangle.svg" alt="upvote" k-else
+            k-style="visibility: {{post.voted ? 'hidden' : 'unset'}}" k-click="votePost">
+          <span>
+            <a href="{{ post.url || '/post?id=' + post._id }}" class="title">
+              {{ post.title }}
+            </a>
+          </span>
+          <span class="domain" k-if="post.url">({{ new URL(post.url).host }})</span>
+        </div>
+        <div class="subtext">
+          <span>
+            <k-param name="id" value="post._id" />
+            {{post.points}} point{{post.points>1?'s':''}} by
+            <a href="/user?id={{post.author.username}}">{{post.author.username}} </a>
+            <a href="/post?id={{post._id}}">{{ moment(post.dateCreated).fromNow() }}</a>
+            <span k-if="post.voted && post.author.username !== user.username">
+              <k-param name="voteType" value="unvote" />
+              <k-param name="id" value="post._id" />
+              | <a k-click="votePost">unvote </a>
+            </span>
+            <a k-if="post.hidden === false" k-click="hidePost">| hide</a>
+            <a k-if="list === 'hidden'" k-click="unhidePost">| unhide</a>
+            <a k-if="list === 'favorites'" k-click="unfavoritePost">| unfavorite</a>
+            |
+            <a href="/post?id={{post._id}}">
+              <span k-if="post.comments === 0">discuss</span>
+              <span k-else>{{post.comments}} comment{{post.comments > 1 ? "s" : ""}}</span>
+            </a>
+          </span>
+        </div>
+      </article>
+    </k-foreach>
+  </k-page>
+
+  <k-page class="profile-page" path="user?id=" name="user profile">
+    <k-param name="username" value="id" />
+    <k-param name="thisUser" value="getUser.data" />
+    <table>
+      <tbody>
+        <tr>
+          <td>user:</td>
+          <td>{{thisUser.username}}</td>
+        </tr>
+        <tr>
+          <td>created:</td>
+          <td>{{thisUser.dateCreated}}</td>
+        </tr>
+        <tr>
+          <td>karma:</td>
+          <td>{{thisUser.karma}}</td>
+        </tr>
+        <tr>
+          <td>about:</td>
+          <td>{{thisUser.about ?? ""}}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td><a href="/?list=submissions&id={{thisUser.username}}">submissions</a></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td><a href="/threads?id={{thisUser.username}}">threads</a></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td><a href="/?list=favorites&id={{thisUser.username}}">favorites</a></td>
+        </tr>
+        <tr k-if="thisUser.username === user?.username">
+          <td></td>
+          <td><a href="/?list=hidden">hidden</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </k-page>
+
+
+  <k-page path="submit" name="Submit" class="submit">
+    <form action="submit" redirect="/?list=new">
+      <table>
+        <tbody>
+          <tr>
+            <td>title:</td>
+            <td><input type="text" name="title" autofocus size="50"></td>
+          </tr>
+          <tr>
+            <td>url:</td>
+            <td><input type="url" name="url" size="50"></td>
+          </tr>
+          <tr>
+            <td>text:</td>
+            <td><textarea name="text" rows="4" cols="50"></textarea></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><button type="submit">submit</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </k-page>
+</body>
+
+
+Now I will show you routes implemented in TypeScript that's the backend and will give a prompt on what kind of frontend to make. You will implement the HRML frontend. Make sure to have functionality to support ALL actions and include ALL routes. Do not style things, just support the functionality correctly. Do not make up attributes or elements, only use ones in example or described. Show error messages around the forms as needed. Make sure to put refresh-on on k-action elements as needed. Remember, when you call an action, all of its params must be defined as k-param elements or come from form inputs. ONLY OUTPUT CODE, NO EXPLANATIONS.
+
+  // Get the currently logged in user
+  @Router.get("/session")
+  async getSessionUser(session: WebSessionDoc) {
+    WebSession.assertLoggedIn(session);
+    const user = WebSession.getUser(session);
+    return await User.getUserById(user);
+  }
+
+  // Get all users
+  @Router.get("/users")
+  async getUsers() {
+    return await User.getUsers();
+  }
+
+  // Get a user by username
+  @Router.get("/users/:username")
+  async getUser(username: string) {
+    return await User.getUserByUsername(username);
+  }
+
+  // Create a user
+  @Router.post("/users")
+  async createUser(session: WebSessionDoc, username: string, password: string) {
+    WebSession.assertLoggedOut(session);
+    return await User.create(username, password);
+  }
+
+  // Change the password of the currently logged in user
+  @Router.post("/password")
+  async changePassword(session: WebSessionDoc, oldPassword: string, password: string) {
+    WebSession.assertLoggedIn(session);
+    const user = WebSession.getUser(session);
+    return await User.updatePassword(user, oldPassword, password);
+  }
+
+  // Log in
+  @Router.post("/login")
+  async logIn(session: WebSessionDoc, username: string, password: string) {
+    const u = await User.authenticate(username, password);
+    WebSession.start(session, u._id);
+    return { msg: "Logged in!" };
+  }
+
+  // Log out
+  @Router.post("/logout")
+  async logOut(session: WebSessionDoc) {
+    WebSession.end(session);
+    return { msg: "Logged out!" };
+  }
+
+  // Search available books by term
+  @Router.get("/books/available/search")
+  async searchAvailableBooks(term: string) {
+    return await Library.searchAvailable(term);
+  }
+
+  // Get a list of available (not borrowed) books, with pagination
+  @Router.get("/books/available")
+  async getAvailableBooks(count: string, page: string) {
+    return await Library.getAvailable(parseInt(count), parseInt(page));
+  }
+
+  // Search for books by term. The term could match title, author, or ISBN
+  @Router.get("/books/search")
+  async searchBooks(term: string) {
+    return await Library.search(term);
+  }
+
+  // Add a new book to the library
+  @Router.post("/books")
+  async addBook(session: WebSessionDoc, title: string, author: string, ISBN: string) {
+    WebSession.assertLoggedIn(session);
+    return await Library.add(title, author, ISBN);
+  }
+
+  // Get books borrowed by a given user
+  @Router.get("/books/borrowed")
+  async getBorrowedBooks(session: WebSessionDoc, _id: string) {
+    WebSession.assertLoggedIn(session);
+    const userId = new ObjectId(_id);
+    return await Library.getBorrowed(userId);
+  }
+
+  // Borrow a book for the logged in user
+  @Router.post("/books/borrow")
+  async borrowBook(session: WebSessionDoc, id: string) {
+    WebSession.assertLoggedIn(session);
+    const userObjectId = new ObjectId(WebSession.getUser(session));
+    const bookObjectId = new ObjectId(id);
+
+    return await Library.borrow(userObjectId, bookObjectId);
+  }
+
+  // Bring back a borrowed book
+  @Router.put("/books/bringBack")
+  async bringBookBack(session: WebSessionDoc, id: string) {
+    WebSession.assertLoggedIn(session);
+    const userObjId = WebSession.getUser(session); // Get user ObjectId from session
+    if (!userObjId) {
+      return { msg: "User must be logged in to bring back a book." };
+    }
+    return await Library.bringBack(new ObjectId(userObjId), new ObjectId(id));
+  }
+
+  // Get a list of all books with pagination
+  @Router.get("/books")
+  async getAllBooks(count: string, page: string) {
+    const booksPerPage = parseInt(count, 10);
+    const pageNumber = parseInt(page, 10);
+    return await Library.get(booksPerPage, pageNumber);
+  }
+
+  // Delete a book by its id
+  @Router.delete("/books/:_id")
+  async deleteBook(session: WebSessionDoc, _id: string) {
+    WebSession.assertLoggedIn(session);
+    const userId = WebSession.getUser(session);
+    const book = await Library.delete(new ObjectId(_id));
+    return { msg: "Book deleted successfully" };
+  }
+
+
+Make a intuitive frontend to support: login, register, log out, add book, borrow book, bring back book, search books, search available books, get all books, get borrowed books, delete book.

@@ -35,7 +35,7 @@ const assistants: Record<Assistant, string> = {
 
 const getResponse = async (assistant: Assistant, prompt: string) => {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4-turbo-preview",
+    model: "gpt-4o",
     messages: [
       { role: "system", content: assistants[assistant] },
       { role: "user", content: prompt },

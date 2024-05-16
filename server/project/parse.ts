@@ -2,6 +2,7 @@ type RouteRep = {
   name: string;
   method: string;
   endpoint: string;
+  params: string[];
 
   description: string;
   code: string;
@@ -52,13 +53,33 @@ export function parseRouterFunctions(code: string) {
       const commentLines = comment.split("\n");
       const description = commentLines
         .map((line) => line.replace(/\/\/\s?/, ""))
-        .join("\n").trim();
+        .join("\n")
+        .trim();
 
       const functionStr = code.substring(nonCommentIndex, endIndex + 1);
 
       const name = functionStr.match(/(?<=async\s)\w+/)?.[0] || "";
       const method = functionStr.split("(")[0].split(".")[1];
-      
+
+      // now get params based on name(param1: type1, ...), search for name
+      const idx = functionStr.indexOf(name);
+      const paramsStart = functionStr.indexOf("(", idx);
+      const paramsEnd = functionStr.indexOf(")", paramsStart);
+      const paramsStr = functionStr.substring(paramsStart + 1, paramsEnd);
+      const params = paramsStr
+        .split(",")
+        .map((param) => param.trim().split(":")[0].trim())
+        .filter(
+          (param) =>
+            param.length > 0 &&
+            param !== "req" &&
+            param !== "res" &&
+            param !== "body" &&
+            param !== "query" &&
+            param !== "params" &&
+            param !== "session"
+        );
+
       // Extract the endpoint from the @Router decorator
       const firstBracket = functionStr.indexOf("(");
       const nextBracket = functionStr.indexOf(")", firstBracket + 1);
@@ -69,6 +90,7 @@ export function parseRouterFunctions(code: string) {
         code: functionStr,
 
         name,
+        params,
         method,
         endpoint,
       });

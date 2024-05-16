@@ -1,4 +1,4 @@
-I am writing my routes using concepts. Errors are automatically handled in my backend framework. The parameters to the decorated function are matched by names to first request parameters, then query and then body (except for "session", "query", "body", and "params" names in which they are taken from request data directly). Remember that in routes, the _id is passed in a string form, and you have to convert it to ObjectId like new ObjectId(_id) if needed. Here's two example routes:
+I am writing my routes using concepts. Errors are automatically handled in my backend framework. The parameters to the decorated function are matched by names to first request parameters, then query and then body (except for "session", "query", "body", and "params" names in which they are taken from request data directly). Remember that in routes, the _id is passed in a string form, and you have to convert it to ObjectId like new ObjectId(_id) if needed. Note that parameters DO NOT support default values, so they will be undefined if not found in request. Here's two example routes:
 
 // Get logged in user
 @Router.get("/session")
@@ -14,4 +14,4 @@ async createUser(session: WebSessionDoc, username: string, password: string) {
   return await User.create(username, password);
 }
 
-I will first provide specs of the concepts and their instantiation, and then ask you to write one route for given description (or update a provided route). Note that you cannot use any method that's not in the spec. If you need another method in the spec, reply exactly with "ERROR: <the method you need to complete this route>". Otherwise, respond only with code for one route (with description commented in line above) and nothing else.
+I will first provide specs of the concepts and their instantiation, and then ask you to write one route for given description (or update a provided route). Note that you cannot use any method that's not in the spec. If you need another method in the spec, reply exactly with "ERROR: <the method you need to complete this route>". Otherwise, respond only with code for one route (with description commented in line above) and nothing else. Unless it's specified or obvious, do not assume the user needs to be logged in for calling the route. Comparing ObjectId needs to be done using .equals()  method. Also keep in mind that all query parameters are string.
